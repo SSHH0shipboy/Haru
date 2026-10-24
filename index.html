@@ -428,6 +428,14 @@ button.srow{width:100%;text-align:left;font:inherit;color:inherit;transition:tra
   .status{display:none}
   .hdr{padding-top:calc(12px + env(safe-area-inset-top))}
 }
+
+.al-status{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.al-status span{font-family:var(--font-num);font-weight:700;font-size:11px;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-3)}
+.al-status .ok{background:var(--c-fam-soft);color:var(--c-fam-deep)}
+.al-status .warn{background:var(--red-soft);color:var(--red)}
+.al-sound{margin-top:10px;font-size:13px;color:var(--red);background:var(--red-soft);border-radius:12px;padding:8px 12px}
+#missedBox .tl li{cursor:default}
+#missedBox .tl li[data-ev]{cursor:pointer}
 </style>
 </head>
 <body>
@@ -464,6 +472,7 @@ button.srow{width:100%;text-align:left;font:inherit;color:inherit;transition:tra
           <button type="button" data-go="money"><span class="v" id="stMoney">0</span><span class="k mono">오늘 지출</span></button>
         </div>
       </div>
+      <div class="sec" id="missedBox" hidden></div>
       <div class="sec">
         <div class="sec-h"><span class="mono">오늘의 흐름</span><button class="link" type="button" data-go="cal">월간 보기 →</button></div>
         <ul class="tl" id="todayList"></ul>
@@ -543,6 +552,7 @@ button.srow{width:100%;text-align:left;font:inherit;color:inherit;transition:tra
         <button class="srow" type="button" data-act="notif"><div class="l">시스템 알림 권한<small id="notifSub"></small></div><div class="r"><span id="notifState"></span><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div></button>
         <button class="srow" type="button" data-act="sound"><div class="l">알람음<small>누르면 고르고 미리 들어볼 수 있어요</small></div><div class="r"><span id="soundName"></span><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div></button>
         <div class="srow"><div class="l">진동<small>지원하는 기기만 (아이폰 웹은 미지원)</small></div><button class="sw-btn" type="button" role="switch" data-set="vibrate" aria-label="진동"></button></div>
+        <div class="srow"><div class="l">알람 대기 모드 (화면 켜두기)<small>앱을 연 채 충전기에 두면 화면이 꺼지지 않아 알람이 확실히 울려요</small></div><button class="sw-btn" type="button" role="switch" data-set="standby" aria-label="알람 대기 모드"></button></div>
         <button class="srow" type="button" data-act="test"><div class="l">테스트 알람 울리기<small>소리·화면 알람이 잘 나오는지 확인</small></div><div class="r"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div></button>
       </div>
 
@@ -586,6 +596,7 @@ button.srow{width:100%;text-align:left;font:inherit;color:inherit;transition:tra
         <div class="srow"><div class="l">이 폰에 자동 저장<small>Safari 방문 기록·사이트 데이터를 지우면 함께 지워져요</small></div><div class="r"><span id="storeState"></span></div></div>
         <button class="srow" type="button" data-act="backup"><div class="l">백업 파일 저장<small>일정·루틴·가계부를 파일 하나로 보관</small></div><div class="r"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div></button>
         <button class="srow" type="button" data-act="restore"><div class="l">백업 불러오기<small>새 폰으로 옮길 때</small></div><div class="r"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div></button>
+        <div class="srow"><div class="l">앱 버전</div><div class="r"><span id="appVer"></span></div></div>
         <button class="srow danger" type="button" data-act="reset"><div class="l">예시 데이터로 초기화</div><div class="r"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div></button>
         <input type="file" id="restoreIn" accept=".json,application/json" hidden>
       </div>
@@ -628,6 +639,7 @@ button.srow{width:100%;text-align:left;font:inherit;color:inherit;transition:tra
       <div class="al-time" id="alTime"></div>
       <div class="al-title" id="alTitle"></div>
       <div class="al-sub" id="alSub"></div>
+      <div class="al-sound" id="alSound" hidden>소리가 안 나면 이 카드를 한 번 눌러 주세요</div>
       <div class="al-btns">
         <button class="btn pri block" type="button" id="alOk">확인했어요</button>
         <button class="btn sec block" type="button" id="alSnooze">5분 뒤 다시 알려줘요</button>
@@ -649,6 +661,7 @@ const nj=document.getElementById('nojs'); if(nj) nj.remove();
 
 /* ---------- constants ---------- */
 const KEY='haruSalim.v2';
+const APP_VER='v4 · 알람 소리 수정';
 const CAT={fam:'가족',home:'집안일',me:'나',kid:'육아'};
 const CATS=Object.keys(CAT);
 const PRE_OPTS=[[1440,'1일 전'],[60,'1시간 전'],[30,'30분 전'],[10,'10분 전'],[0,'정시']];
@@ -725,7 +738,7 @@ function seed(){
     members:[{id:uid(),name:'나',role:'관리자',cat:'me'},{id:uid(),name:'남편',role:'편집 가능',cat:'fam'},{id:uid(),name:'첫째',role:'보기만',cat:'kid'}],
     settings:{defPre:[60,30,0],defPost:10,sound:'bell',vibrate:true,wake:'06:30',sleep:'23:00',autoRhythm:true,
       widgets:{lock:true,small:true,medium:true,money:false},dark:false,weekStart:0,learn:true,learnMap:{},
-      filter:{fam:true,home:true,me:true,kid:true}},
+      filter:{fam:true,home:true,me:true,kid:true},standby:false},
     fired:{}, acked:{}, snoozes:[]
   };
 }
@@ -782,34 +795,86 @@ function live(x){ if(x.snooze) return true; if(x.post&&S.acked[x.occ]) return fa
   if(x.rt&&(S.rtDone[x.k]||[]).includes(x.rt)) return false; return true; }
 
 /* ---------- sound / vibration / notification ---------- */
-let AC=null;
-function unlockAudio(){ if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}} if(AC&&AC.state==='suspended') AC.resume().catch(()=>{}); }
-document.addEventListener('pointerdown',unlockAudio,{passive:true,capture:true});
+// iOS only lets a page start audio inside a touchend/click; unlock both Web Audio and an <audio> fallback there.
+let AC=null, audioEl=null, elOK=false, elKind='';
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const acOK=()=>!!(AC&&AC.state==='running');
+const soundReady=()=>acOK()||elOK;
+function wavURL(kind){
+  const sr=22050, dur=2.4, n=Math.floor(sr*dur), pcm=new Int16Array(n);
+  const notes=kind==='xylo'?[[1047,0],[1319,.15],[1568,.3],[2093,.45]]:kind==='beep'?[[1000,0],[1000,.28],[1000,.56]]:[[784,0],[988,.3],[1175,.6]];
+  const len=kind==='beep'?.16:kind==='xylo'?.5:1.6, decay=kind==='xylo'?6:2.2;
+  for(let i=0;i<n;i++){ const t=i/sr; let v=0;
+    for(const [f,st] of notes){ const d=t-st; if(d<0||d>=len) continue; const w=Math.sin(2*Math.PI*f*d);
+      v+=(kind==='beep'?Math.sign(w)*.3:w*Math.exp(-decay*d))*Math.min(1,d/.01); }
+    pcm[i]=Math.max(-1,Math.min(1,v*.35))*32767; }
+  const h=new DataView(new ArrayBuffer(44)), str=(o,x)=>[...x].forEach((c,i)=>h.setUint8(o+i,c.charCodeAt(0)));
+  str(0,'RIFF'); h.setUint32(4,36+n*2,true); str(8,'WAVE'); str(12,'fmt '); h.setUint32(16,16,true); h.setUint16(20,1,true); h.setUint16(22,1,true);
+  h.setUint32(24,sr,true); h.setUint32(28,sr*2,true); h.setUint16(32,2,true); h.setUint16(34,16,true); str(36,'data'); h.setUint32(40,n*2,true);
+  return URL.createObjectURL(new Blob([h.buffer,pcm.buffer],{type:'audio/wav'}));
+}
+const wavCache={};
+function loadEl(kind){ if(kind==='mute') kind='bell'; if(elKind===kind) return; wavCache[kind]=wavCache[kind]||wavURL(kind); audioEl.src=wavCache[kind]; elKind=kind; }
+function unlockAudio(){
+  try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(e){}   // iOS 17+: ring even with the silent switch on
+  if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(AC){ if(AC.state!=='running') AC.resume().then(renderNext,()=>{});
+    try{ const b=AC.createBuffer(1,1,22050), src=AC.createBufferSource(); src.buffer=b; src.connect(AC.destination); src.start(0); }catch(e){} }
+  if(!audioEl){ audioEl=new Audio(); audioEl.preload='auto'; audioEl.setAttribute('playsinline',''); }
+  if(!elOK){ try{ loadEl(S.settings.sound); audioEl.muted=true; const pr=audioEl.play();
+    if(pr&&pr.then) pr.then(()=>{ audioEl.pause(); audioEl.currentTime=0; audioEl.muted=false; elOK=true; renderNext(); },()=>{ audioEl.muted=false; }); }catch(e){} }
+}
+['touchend','click','keydown'].forEach(t=>document.addEventListener(t,unlockAudio,{capture:true,passive:true}));
 function tone(f,t0,dur,type,vol){ const o=AC.createOscillator(),g=AC.createGain(); o.type=type;o.frequency.value=f;
   g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(vol,t0+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
   o.connect(g); g.connect(AC.destination); o.start(t0); o.stop(t0+dur+0.05); }
-function ring(kind,reps){ kind=kind||S.settings.sound; reps=reps||3; if(kind==='mute') return; unlockAudio(); if(!AC) return;
-  const n=AC.currentTime+0.05;
-  for(let r=0;r<reps;r++){ const b=n+r*1.7;
-    if(kind==='bell') [784,988,1175].forEach((f,i)=>tone(f,b+i*0.3,1.3,'sine',0.28));
-    else if(kind==='xylo') [1047,1319,1568,2093].forEach((f,i)=>tone(f,b+i*0.15,0.4,'triangle',0.3));
-    else [0,0.28,0.56].forEach(d=>tone(1000,b+d,0.16,'square',0.07)); } }
+function playOnce(kind){ kind=kind||S.settings.sound; if(kind==='mute') return false;
+  if(acOK()){ const b=AC.currentTime+0.05;
+    if(kind==='bell') [784,988,1175].forEach((f,i)=>tone(f,b+i*0.3,1.3,'sine',0.3));
+    else if(kind==='xylo') [1047,1319,1568,2093].forEach((f,i)=>tone(f,b+i*0.15,0.4,'triangle',0.32));
+    else [0,0.28,0.56].forEach(d=>tone(1000,b+d,0.16,'square',0.08));
+    return true; }
+  if(audioEl&&elOK){ try{ loadEl(kind); audioEl.currentTime=0; audioEl.play().catch(()=>{}); return true; }catch(e){} }
+  return false; }
+function ring(kind){ unlockAudio(); playOnce(kind); }   // preview from a tap
+let ringTimer=null, ringUntil=0;
+function startRing(){ stopRing(); ringUntil=Date.now()+120000;
+  const loop=()=>{ if(Date.now()>ringUntil){ stopRing(); return; } playOnce(); buzz(); };
+  loop(); ringTimer=setInterval(loop,2600); }
+function stopRing(){ clearInterval(ringTimer); ringTimer=null; try{ if(audioEl) audioEl.pause(); }catch(e){} try{ if(navigator.vibrate) navigator.vibrate(0); }catch(e){} }
 function buzz(){ if(S.settings.vibrate&&navigator.vibrate) try{navigator.vibrate([400,200,400,200,400]);}catch(e){} }
-function sysNotify(x){ try{ if('Notification' in window&&Notification.permission==='granted') new Notification('하루살림 · '+x.label,{body:`${x.time} ${x.title}`,tag:x.key}); }catch(e){} }
+let swReg=null;
+if('serviceWorker' in navigator&&location.protocol==='https:'&&!/claude\.ai|claudeusercontent/.test(location.hostname))
+  navigator.serviceWorker.register('sw.js').then(r=>{swReg=r;},()=>{});
+function sysNotify(x){ try{ if(!('Notification' in window)||Notification.permission!=='granted') return;
+  const title='하루살림 · '+x.label, opt={body:`${x.time} ${x.title}`,tag:x.key,requireInteraction:true,vibrate:[400,200,400]};
+  if(swReg&&swReg.showNotification) swReg.showNotification(title,opt).catch(()=>{}); else new Notification(title,opt); }catch(e){} }
+
+/* ---------- screen wake lock (알람 대기 모드) ---------- */
+let wakeLock=null;
+async function acquireWake(){ if(!('wakeLock' in navigator)) return false;
+  try{ wakeLock=await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release',()=>{ wakeLock=null; renderNext(); }); renderNext(); return true; }catch(e){ return false; } }
+function releaseWake(){ if(wakeLock) wakeLock.release().catch(()=>{}); wakeLock=null; }
 
 /* ---------- alarm engine ---------- */
 const queue=[]; let showing=null;
-function checkAlarms(){ const now=new Date();
-  const due=triggers(new Date(+now-10*60000),new Date(+now+1000)).filter(live).filter(x=>!S.fired[x.key]);
-  if(!due.length) return;
+function checkAlarms(){ const now=new Date(), recent=new Date(+now-10*60000);
+  // anything that came due while the app was closed/asleep (older than 10 min) is listed as missed, not rung
+  const since=new Date(Math.max(+now-12*3600000,Math.min(S.lastSeen||+now,+recent)));
+  const missed=since<recent?triggers(since,recent).filter(live).filter(x=>!S.fired[x.key]):[];
+  S.lastSeen=+now;
+  if(missed.length){ missed.forEach(x=>{ S.fired[x.key]=Date.now(); });
+    S.missed=(S.missed||[]).concat(missed.map(x=>({title:x.title,time:x.time,k:x.k,label:x.label,ev:x.ev||null}))).slice(-20); save(); renderMissed(); }
+  const due=triggers(recent,new Date(+now+1000)).filter(live).filter(x=>!S.fired[x.key]);
+  if(!due.length){ save(); return; }
   due.forEach(x=>{ S.fired[x.key]=Date.now(); if(x.snooze) S.snoozes=S.snoozes.filter(z=>'snz'+z.id!==x.key); queue.push(x); });
   const cut=Date.now()-3*864e5; Object.keys(S.fired).forEach(k=>{if(S.fired[k]<cut) delete S.fired[k];}); Object.keys(S.acked).forEach(k=>{if(S.acked[k]<cut) delete S.acked[k];});
   save(); showAlarm(); renderToday(); }
 function showAlarm(){ if(showing||!queue.length) return; showing=queue.shift(); const x=showing;
   $('#alKind').textContent=x.label; $('#alTime').textContent=x.time; $('#alTitle').textContent=x.title; $('#alSub').textContent=`${dayLabel(x.k||todayKey())} ${x.time}`;
-  $('#alView').hidden=!x.ev; $('#alSnooze').hidden=!!x.test; $('#alarmOv').classList.add('on'); $('#alOk').focus();
-  ring(); buzz(); if(document.hidden) sysNotify(x); else sysNotify(x); }
-function closeAlarm(){ $('#alarmOv').classList.remove('on'); showing=null; setTimeout(showAlarm,300); }
+  $('#alView').hidden=!x.ev; $('#alSnooze').hidden=!!x.test; $('#alarmOv').classList.add('on'); $('#alOk').focus(); $('#alSound').hidden=soundReady()||S.settings.sound==='mute';
+  startRing(); sysNotify(x); document.title='(알람) '+x.title; }
+function closeAlarm(){ stopRing(); document.title='하루살림 플래너'; $('#alarmOv').classList.remove('on'); showing=null; setTimeout(showAlarm,300); }
 $('#alOk').addEventListener('click',()=>{ if(showing&&showing.occ) S.acked[showing.occ]=Date.now(); save(); closeAlarm(); snack('확인했어요 · 남은 재알림은 울리지 않아요'); renderToday(); });
 $('#alSnooze').addEventListener('click',()=>{ const x=showing; S.snoozes.push({id:uid(),at:Date.now()+5*60000,title:x.title,time:x.time,k:x.k,ev:x.ev,occ:x.occ}); save(); closeAlarm(); snack('5분 뒤에 다시 알려드릴게요'); renderToday(); });
 $('#alView').addEventListener('click',()=>{ const x=showing; if(x.occ) S.acked[x.occ]=Date.now(); save(); closeAlarm(); if(x.ev) openEvent(x.ev,x.k); });
@@ -878,7 +943,8 @@ function openEvent(id,k){
       save(); closeSheet();
       if(obj.date!==todayKey()){ selKey=obj.date; const dd=fromKey(obj.date); viewY=dd.getFullYear(); viewM=dd.getMonth(); }
       renderAll(); if(obj.date!==todayKey()&&cur==='today') go('cal');
-      snack(`저장했어요 · 알람 ${pre.length}개${obj.post?' + 사후 재알림':''}`);
+      const saved=e||S.events[S.events.length-1];
+      snack(`저장했어요 · 알람 ${pre.length}개${obj.post?' + 사후':''}`,'아이폰에도',()=>exportIcs([saved],`하루살림-${saved.title.slice(0,12)}.ics`));
     };
   });
 }
@@ -947,10 +1013,19 @@ function buildIcs(list){
     L.push('END:VEVENT'); });
   L.push('END:VCALENDAR'); return L.join('\r\n');
 }
-async function exportIcs(list,name){
+function exportIcs(list,name){
   if(!list.length){snack('보낼 일정이 없어요');return;}
-  const ok=await offerFile(name,buildIcs(list),'text/calendar');
-  if(ok) snack(`${list.length}개 일정 파일을 만들었어요 · 열어서 '모두 추가'를 누르세요`);
+  const ics=buildIcs(list);
+  openSheet('아이폰 캘린더로 보내기',`<div class="tipbox">일정 <b>${list.length}개</b>를 사전·사후 알람과 함께 아이폰 기본 캘린더에 등록해요. 등록하면 <b>앱을 닫아도, 화면이 꺼져 있어도</b> 아이폰이 직접 울려요.</div>
+    <ol class="steps"><li><b>캘린더에 추가</b>를 누르면 일정 미리보기가 열려요</li><li>오른쪽 위 <b>모두 추가</b>(또는 추가)를 누르세요</li><li>안 열리면 <b>파일로 저장</b> → 파일 앱에서 그 파일을 눌러 추가하세요</li></ol>
+    <p class="wnote">같은 일정을 두 번 보내면 캘린더에 두 번 들어갈 수 있어요. 새로 만든 일정만 보내려면 일정 수정 화면의 '아이폰 캘린더에도 추가'를 쓰세요.</p>`,
+    `<button class="btn sec" type="button" id="icsSave">파일로 저장</button><button class="btn pri" type="button" id="icsOpen">캘린더에 추가</button>`,()=>{
+      $('#icsSave').onclick=()=>{ offerFile(name,ics,'text/calendar').then(ok=>{ if(ok) snack('파일을 저장했어요 · 파일 앱에서 눌러 추가하세요'); }); };
+      $('#icsOpen').onclick=()=>{ const url=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
+        if(isIOS){ const w=window.open(url,'_blank'); if(!w){ offerFile(name,ics,'text/calendar'); } }
+        else offerFile(name,ics,'text/calendar');
+        setTimeout(()=>URL.revokeObjectURL(url),60000); snack("열린 화면에서 '모두 추가'를 누르세요"); };
+    });
 }
 
 /* ---------- actions (admin rows etc.) ---------- */
@@ -964,8 +1039,8 @@ const ACT={
     renderAdmin(); snack(Notification.permission==='granted'?'시스템 알림이 켜졌어요':Notification.permission==='denied'?'설정 앱에서 알림을 허용해 주세요':'알림 권한을 묻지 못했어요');
   },
   sound(){ openSheet('알람음',`<div class="chips" id="sSel">${chipsHTML(SOUNDS,S.settings.sound)}</div><p class="wnote">고르면 바로 미리 들려드려요. 아이폰 옆면 무음 스위치가 켜져 있으면 소리가 나지 않아요.</p>`,'',()=>{
-    wireChips($('#sSel'),false,c=>{ S.settings.sound=c.dataset.v; save(); renderAdmin(); ring(c.dataset.v,1); }); }); },
-  test(){ queue.push({title:'테스트 알람이에요',time:hm(new Date()),k:todayKey(),label:'테스트 알람',key:'test'+Date.now(),test:true}); showAlarm(); },
+    wireChips($('#sSel'),false,c=>{ S.settings.sound=c.dataset.v; save(); renderAdmin(); renderNext(); ring(c.dataset.v); }); }); },
+  test(){ unlockAudio(); queue.push({title:'테스트 알람이에요',time:hm(new Date()),k:todayKey(),label:'테스트 알람',key:'test'+Date.now(),test:true}); showAlarm(); },
   weekstart(){ openSheet('주 시작 요일',`<div class="chips" id="wsSel">${chipsHTML([[0,'일요일'],[1,'월요일']],S.settings.weekStart)}</div>`,'',()=>{
     wireChips($('#wsSel'),false,c=>{ S.settings.weekStart=+c.dataset.v; save(); renderAll(); closeSheet(); snack('주 시작 요일을 바꿨어요'); }); }); },
   ics(){ const from=keyOf(addDays(today(),-1)); exportIcs(S.events.filter(e=>e.repeat!=='none'||e.date>=from),`하루살림-일정-${todayKey()}.ics`); },
@@ -995,7 +1070,9 @@ document.addEventListener('click',ev=>{
   const t=ev.target;
   const g=t.closest('[data-go]'); if(g){ go(g.dataset.go); return; }
   const a=t.closest('[data-act]'); if(a&&ACT[a.dataset.act]){ ACT[a.dataset.act](); return; }
-  const sw=t.closest('.sw-btn[data-set]'); if(sw){ const p=sw.dataset.set, v=!getP(p); setP(p,v); save(); if(p==='dark') applyTheme(); renderAll(); snack(v?'켰어요':'껐어요'); return; }
+  const sw=t.closest('.sw-btn[data-set]'); if(sw){ const p=sw.dataset.set, v=!getP(p); setP(p,v); save(); if(p==='dark') applyTheme();
+    if(p==='standby'){ if(v){ acquireWake().then(ok=>snack(ok?'알람 대기 모드 · 화면을 켜 둘게요 (충전 중 사용 권장)':'이 기기는 화면 켜두기를 지원하지 않아요')); } else { releaseWake(); snack('알람 대기 모드를 껐어요'); } renderAll(); return; }
+    renderAll(); snack(v?'켰어요':'껐어요'); return; }
   const on=t.closest('[data-turnon]'); if(on){ S.settings.widgets[on.dataset.turnon]=true; save(); renderAll(); return; }
   const li=t.closest('li[data-ev]'); if(li){ openEvent(li.dataset.ev,li.dataset.k); return; }
   const mem=t.closest('li[data-member]'); if(mem){ openMember(mem.dataset.member); return; }
@@ -1073,7 +1150,7 @@ function renderToday(){
   const jan1=new Date(n.getFullYear(),0,1), wk=Math.ceil(((n-jan1)/864e5+jan1.getDay()+1)/7);
   $('#heroDay').textContent=n.getDate(); $('#heroMonth').textContent=`${n.getMonth()+1}월 · ${wk}주차`; $('#heroGreet').textContent=GREET[n.getDay()];
   $('#heroMeta').textContent=`일정 ${evs.length} · 루틴 ${S.routines.length} · 알람 켜짐`;
-  renderNext();
+  renderNext(); renderMissed();
   const done=(S.rtDone[k]||[]).filter(id=>S.routines.some(r=>r.id===id)).length;
   $('#stEv').textContent=evs.length; $('#stRt').innerHTML=`${done}<span style="color:var(--ink-4)">/${S.routines.length}</span>`;
   const sp=todaySpend(); $('#stMoney').textContent=sp?`-${sp>=10000?(sp/1000).toFixed(1).replace(/\.0$/,'')+'k':won(sp)}`:'0';
@@ -1083,11 +1160,20 @@ function renderToday(){
 }
 function renderNext(){
   const x=nextUp(), b=$('#nextAlarm');
-  if(!x){ b.classList.add('idle'); b.innerHTML=`<div><div class="lab"><span class="mono">다음 알람</span></div><div class="title">이틀 안에 예정된 알람이 없어요</div></div><div class="cd">—</div>`; return; }
+  if(!x){ b.classList.add('idle'); b.innerHTML=`<div><div class="lab"><span class="mono">다음 알람</span></div><div class="title">이틀 안에 예정된 알람이 없어요</div></div><div class="cd">—</div>${alarmStatus()}`; return; }
   b.classList.remove('idle'); const diff=Math.max(0,Math.round((x.t-new Date())/60000)); const h=Math.floor(diff/60), m=diff%60;
   b.innerHTML=`<div><div class="lab"><span class="rdot" aria-hidden="true"></span><span class="mono">다음 알람 · ${esc(x.label)}</span></div><div class="title">${esc(x.title)}</div><div class="mono" style="color:var(--ink-3);margin-top:4px">${dayLabel(x.k)} ${x.time} · 알람 ${hm(x.t)}</div></div>
-    <div class="cd">${h?h+':'+pad(m):m+'분'}<small>${h?'시간 남음':'남음'}</small></div>`;
+    <div class="cd">${h?h+':'+pad(m):m+'분'}<small>${h?'시간 남음':'남음'}</small></div>${alarmStatus()}`;
 }
+function alarmStatus(){
+  const snd=S.settings.sound==='mute'?'<span>소리 끔 (화면만)</span>':soundReady()?'<span class="ok">소리 켜짐</span>':'<span class="warn">소리 대기 중 · 화면을 아무 데나 한 번 눌러 주세요</span>';
+  const wk=S.settings.standby?(wakeLock?'<span class="ok">화면 켜둠</span>':'<span>화면 켜두기 대기</span>'):'';
+  return `<div class="al-status">${snd}${wk}</div>`; }
+function renderMissed(){ const m=S.missed||[], box=$('#missedBox'); if(!box) return; box.hidden=!m.length; if(!m.length) return;
+  box.innerHTML=`<div class="sec-h"><span class="mono" style="color:var(--red)">놓친 알람 ${m.length}개</span><button class="link" type="button" id="missedClear">모두 확인</button></div>
+    <ul class="tl">${m.slice().reverse().map(x=>`<li ${x.ev?`data-ev="${x.ev}" data-k="${x.k}" role="button" tabindex="0"`:''}><span class="time">${x.time}</span><span class="bar" style="background:var(--red)"></span><div><div class="ttl">${esc(x.title)}</div><div class="sub"><span class="tag red">${esc(x.label)}</span><span class="tag">${dayLabel(x.k)}</span></div></div><span></span></li>`).join('')}</ul>
+    <div class="tipbox red" style="margin-top:10px">앱이 닫혀 있거나 화면이 꺼져 있으면 웹앱은 알람을 울릴 수 없어요. <b>아이폰 캘린더로 보내기</b>를 해 두면 앱을 닫아도 아이폰이 직접 울려요.<div style="margin-top:10px"><button class="btn pri sm" type="button" data-act="ics">아이폰 캘린더로 보내기</button></div></div>`;
+  $('#missedClear').onclick=()=>{ S.missed=[]; save(); renderMissed(); snack('놓친 알람을 모두 확인했어요'); }; }
 function upcomingEvents(n){ const now=new Date(), out=[]; for(let i=0;i<14&&out.length<n;i++){ const k=keyOf(addDays(today(),i));
   for(const e of eventsOn(k)){ if(at(k,e.time)>=now&&!isDone(e,k)) out.push({e,k}); if(out.length>=n) break; } } return out; }
 
@@ -1151,6 +1237,7 @@ function renderAdmin(){
   $('#wakeIn').value=st.wake; $('#sleepIn').value=st.sleep;
   $('#members').innerHTML=S.members.length?S.members.map(m=>`<li data-member="${m.id}" role="button" tabindex="0" aria-label="${esc(m.name)} 수정"><span class="av">${esc(m.name.slice(0,1))}</span><span class="nm">${esc(m.name)}<small>${esc(m.role)}</small></span><span class="sw c-${m.cat}"></span></li>`).join(''):'<li class="empty">멤버가 없어요</li>';
   $('#storeState').textContent=storageOK?'켜짐':'저장 안 됨';
+  $('#appVer').textContent=APP_VER;
   $('#installSub').textContent=isStandalone()?'홈 화면 앱으로 실행 중이에요':'Safari 공유(↑) → 홈 화면에 추가';
 }
 
@@ -1194,9 +1281,11 @@ function makeIcon(){ try{ const c=document.createElement('canvas'); c.width=c.he
 let lastDay=todayKey();
 function tick(){ const n=new Date(); $('#clock').textContent=hm(n); const lc=$('#lockClock'); if(lc) lc.textContent=hm(n);
   if(todayKey()!==lastDay){ lastDay=todayKey(); selKey=lastDay; renderAll(); } else renderNext(); checkAlarms(); }
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) tick(); });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ tick(); if(S.settings.standby&&!wakeLock) acquireWake(); } });
 
+if(fresh) S.lastSeen=Date.now();
 applyTheme(); renderAll(); tick(); setInterval(tick,5000);
+if(S.settings.standby) acquireWake();
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(makeIcon); else makeIcon();
 })();
 </script>
