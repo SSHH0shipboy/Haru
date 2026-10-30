@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>하원 정산</title>
+<meta name="description" content="자녀 학원 하원 체크와 월간·연간 하원비 정산 (V 1.2.0 by S.H.KIM)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="하원정산">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#FFF4F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1D1418" media="(prefers-color-scheme: dark)">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}</style>
+<script>window.HAKWON_WEB = true;</script>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: 엄마의 하원 노트 — 단일 열 카드(최대 560px). 위에서 아래로 "누가 → 어디 → 체크 → 자녀별 비용". 하단 탭 4개. */
+:root{
+  --paper:#FFF4F7; --card:#FFFFFF; --ink:#3A2430; --ink-2:#6E5562; --ink-3:#9A8290;
+  --line:#F5DCE6; --field:#FFF9FB;
+  --rose:#C23A6E; --on-rose:#FFFFFF; --rose-soft:#FCE3EC; --rose-mid:#F3B6CB;
+  --sky:#2B74AE; --sky-soft:#E3F0FA;
+  --ok:#1F7A55; --ok-soft:#E0F3EA; --warn:#9A5B00; --warn-soft:#FFF0D9; --danger:#B4232F;
+  --k0:#D9577F; --k0s:#FDE6EE; --k1:#3E86C4; --k1s:#E4F0FB; --k2:#8A63C8; --k2s:#EFE8FA; --k3:#2F9A7E; --k3s:#E2F4EE; --k4:#C9822A; --k4s:#FBF0E0;
+  --shadow:0 2px 6px rgba(160,60,100,.06),0 10px 24px rgba(160,60,100,.07);
+  --f-display:"Jua","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --r:20px; --nav-h:66px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#1D1418; --card:#2A1E24; --ink:#F7E9EF; --ink-2:#CDB4C0; --ink-3:#9E8592;
+  --line:#40303A; --field:#23191E;
+  --rose:#F28DB3; --on-rose:#2A0F1B; --rose-soft:#43222F; --rose-mid:#6A3349;
+  --sky:#8FC3EE; --sky-soft:#1E2E3D;
+  --ok:#5FCB9C; --ok-soft:#173327; --warn:#F2B866; --warn-soft:#3A2A12; --danger:#FF8A93;
+  --k0:#F08DAA; --k0s:#45222F; --k1:#8CBDEB; --k1s:#1E2E3E; --k2:#BCA0EE; --k2s:#2E2442; --k3:#6FD0B2; --k3s:#163329; --k4:#EDB46A; --k4s:#3A2A14;
+  --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#1D1418; --card:#2A1E24; --ink:#F7E9EF; --ink-2:#CDB4C0; --ink-3:#9E8592;
+  --line:#40303A; --field:#23191E;
+  --rose:#F28DB3; --on-rose:#2A0F1B; --rose-soft:#43222F; --rose-mid:#6A3349;
+  --sky:#8FC3EE; --sky-soft:#1E2E3D;
+  --ok:#5FCB9C; --ok-soft:#173327; --warn:#F2B866; --warn-soft:#3A2A12; --danger:#FF8A93;
+  --k0:#F08DAA; --k0s:#45222F; --k1:#8CBDEB; --k1s:#1E2E3E; --k2:#BCA0EE; --k2s:#2E2442; --k3:#6FD0B2; --k3s:#163329; --k4:#EDB46A; --k4s:#3A2A14;
+  --shadow:none; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--paper)}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;-webkit-tap-highlight-color:transparent;word-break:keep-all}
+/* 아이폰: 연속 탭 시 화면 확대 방지, 입력 시 하단 메뉴 숨김 */
+button,a,input,label,textarea{touch-action:manipulation}
+body.kb .tabs{display:none}
+body.kb main{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+input[type=date]{display:block;line-height:44px;text-align:left}
+input[type=date]::-webkit-date-and-time-value{text-align:left}
+.guide{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px;font-size:15px;color:var(--ink-2)}
+.guide b{color:var(--ink)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--rose-mid);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper)}
+.top .wrap{display:flex;align-items:center;gap:10px;padding-block:10px}
+.ver{font-family:var(--f-mono);font-size:12px;color:var(--ink-3);white-space:nowrap}
+.brand{font-family:var(--f-display);font-size:19px;line-height:1;white-space:nowrap;color:var(--rose)}
+.spacer{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.mute{background:var(--rose-soft);color:var(--ink-2)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+main{padding-block:6px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom,0px))}
+.view{display:flex;flex-direction:column;gap:14px}
+h2{font-family:var(--f-display);font-weight:400;font-size:24px;line-height:1.2;margin:0;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:400;font-size:20px;line-height:1.25;margin:0}
+.hint{font-size:13px;color:var(--ink-3);font-weight:500}
+.muted{color:var(--ink-2)} .small{font-size:14px}
+.card{background:var(--card);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);border:1px solid var(--line);display:flex;flex-direction:column;gap:14px;min-width:0}
+.card-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* buttons */
+.btn{min-height:46px;padding:0 18px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:background .18s,border-color .18s,transform .1s}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--rose);color:var(--on-rose);border-color:var(--rose)}
+.btn.soft{background:var(--rose-soft);border-color:transparent;color:var(--rose)}
+.btn.danger{color:var(--danger)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--rose)}
+.btn.sm{min-height:38px;padding:0 13px;font-size:14px;border-radius:12px}
+.btn.big{min-height:60px;font-size:18px;border-radius:18px;width:100%;font-family:var(--f-display);font-weight:400;letter-spacing:.01em}
+.btn[disabled]{opacity:.42;cursor:not-allowed;transform:none}
+.icon-btn{width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--card);display:inline-grid;place-items:center;color:var(--ink-2)}
+.icon-btn[disabled]{opacity:.35}
+.icon-btn svg,.btn svg{width:20px;height:20px}
+input[type=text],input[type=number],input[type=date],textarea{-webkit-appearance:none;appearance:none;min-height:46px;border:1px solid var(--line);border-radius:14px;background:var(--field);padding:0 14px;width:100%;font-size:16px;color:var(--ink)}
+textarea{padding:10px 14px;min-height:70px;resize:vertical}
+input::placeholder,textarea::placeholder{color:var(--ink-3)}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.field>span{font-size:14px;font-weight:700;color:var(--ink-2)}
+
+/* date */
+.datebar{display:flex;align-items:center;gap:8px}
+.datebar .d{flex:1;text-align:center;min-width:0}
+.datebar .d strong{font-family:var(--f-display);font-weight:400;font-size:26px;display:block;line-height:1.15}
+.datebar .d small{color:var(--ink-2);font-size:14px}
+
+/* step label */
+.step{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--rose-soft);color:var(--rose);font-weight:700;font-size:14px;flex:none}
+
+/* kid chips */
+.kids{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.kid{position:relative;display:flex;align-items:center;gap:10px;min-height:62px;padding:8px 12px 8px 8px;border-radius:18px;border:2px solid var(--line);background:var(--field);text-align:left;transition:border-color .18s,background .18s;min-width:0}
+.ava{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-size:20px;flex:none;background:var(--ks);color:var(--kc)}
+.kid .nm{font-weight:700;font-size:17px;min-width:0;overflow-wrap:anywhere}
+.kid[aria-pressed="true"]{border-color:var(--kc);background:var(--ks)}
+.kid[aria-pressed="true"] .ava{background:var(--kc);color:var(--card)}
+.tick{position:absolute;right:8px;top:8px;width:20px;height:20px;border-radius:50%;background:var(--kc);color:var(--card);display:none;place-items:center}
+.tick svg{width:13px;height:13px}
+.kid[aria-pressed="true"] .tick,.ac[aria-pressed="true"] .tick{display:grid}
+
+/* academy chips */
+.acs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ac{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:64px;padding:10px 14px;border-radius:16px;border:2px solid var(--line);background:var(--field);text-align:left;transition:border-color .18s,background .18s;min-width:0}
+.ac .nm{font-weight:700;font-size:16px;padding-right:22px;overflow-wrap:anywhere}
+.ac .pr{font-size:13px;color:var(--ink-2)}
+.ac .pr.zero{color:var(--warn);font-weight:700}
+.ac[aria-pressed="true"]{border-color:var(--rose);background:var(--rose-soft);--kc:var(--rose)}
+.quick{display:flex;gap:6px}
+
+/* check button area */
+.go{display:flex;flex-direction:column;gap:8px}
+.go .preview{font-size:14px;color:var(--ink-2);text-align:center;min-height:22px}
+
+/* today records */
+.rec-kid{display:flex;flex-direction:column;gap:6px;padding-block:6px}
+.rec-kid+.rec-kid{border-top:1px dashed var(--line);padding-top:12px}
+.rec-head{display:flex;align-items:center;gap:8px}
+.ava.sm{width:30px;height:30px;font-size:15px}
+.rec-line{display:flex;align-items:center;gap:8px;padding-left:38px;font-size:15px}
+.rec-line .amt{margin-left:auto;font-weight:700}
+.minus{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;font-size:18px;font-weight:700;color:var(--ink-2);flex:none}
+.sum-line{display:flex;align-items:baseline;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
+.sum-line b{font-family:var(--f-display);font-weight:400;font-size:22px}
+
+/* per-child cost */
+.kc-list{display:flex;flex-direction:column;gap:12px}
+.kc{display:flex;flex-direction:column;gap:6px}
+.kc-top{display:flex;align-items:center;gap:10px}
+.kc-top .nm{font-weight:700;font-size:16px}
+.kc-top .amt{margin-left:auto;font-family:var(--f-display);font-size:20px}
+.bar{height:10px;border-radius:999px;background:var(--field);border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:999px;background:var(--kc)}
+.kc-acs{display:flex;flex-wrap:wrap;gap:6px;padding-left:54px}
+.pill{font-size:13px;padding:3px 10px;border-radius:999px;background:var(--ks);color:var(--ink-2);white-space:nowrap}
+.grand{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;padding:14px 16px;border-radius:16px;background:var(--rose-soft)}
+.grand .lb{font-weight:700;color:var(--rose)}
+.grand b{font-family:var(--f-display);font-weight:400;font-size:30px;line-height:1;margin-left:auto}
+
+.banner{display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:16px;background:var(--warn-soft);color:var(--warn);font-size:14px;font-weight:600;flex-wrap:wrap}
+.banner b{flex:1;min-width:170px;font-weight:700}
+.banner.info{background:var(--sky-soft);color:var(--sky)}
+.locked-note{display:flex;gap:8px;align-items:center;padding:12px 14px;border-radius:16px;background:var(--ok-soft);color:var(--ok);font-size:14px;font-weight:700}
+.locked-note svg{width:18px;height:18px;flex:none}
+
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal .wd{font-size:12px;text-align:center;color:var(--ink-3);font-weight:700;padding-block:4px}
+.cal .wd.sun{color:var(--rose)}
+.cell{aspect-ratio:1/1.15;max-width:100%;border-radius:12px;border:1.5px solid transparent;background:var(--field);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:6px;gap:3px;font-size:14px;min-width:0}
+.cell.blank{background:transparent}
+.cell.today{border-color:var(--rose)}
+.cell.has{background:var(--rose-soft)}
+.cell .dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:90%}
+.cell .dots i{width:6px;height:6px;border-radius:50%;background:var(--kc)}
+.cell .memo-dot{width:5px;height:5px;border-radius:2px;background:var(--sky)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:50%;background:var(--kc)}
+
+/* settle */
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--rose-soft);border-radius:16px;padding:4px;gap:4px}
+.seg button{min-height:42px;border:0;border-radius:12px;background:transparent;font-weight:700;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--rose);box-shadow:var(--shadow)}
+.total-big{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.total-big b{font-family:var(--f-display);font-weight:400;font-size:42px;line-height:1}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px}
+.badge.lock{background:var(--ok-soft);color:var(--ok)} .badge.open{background:var(--rose-soft);color:var(--rose)}
+.badge svg{width:13px;height:13px}
+.kcard{border-radius:18px;border:1px solid var(--line);background:var(--field);padding:14px;display:flex;flex-direction:column;gap:8px}
+.kcard-head{display:flex;align-items:center;gap:10px}
+.kcard-head .nm{font-family:var(--f-display);font-size:20px}
+.kcard-head .amt{margin-left:auto;text-align:right;line-height:1.2}
+.kcard-head .amt b{font-family:var(--f-display);font-weight:400;font-size:22px;display:block}
+.kcard-head .amt small{font-size:12px;color:var(--ink-3)}
+.lines{display:flex;flex-direction:column}
+.ln{display:flex;align-items:baseline;gap:8px;padding:8px 2px;border-top:1px solid var(--line);font-size:15px}
+.ln .calc{color:var(--ink-3);font-size:13px}
+.ln .amt{margin-left:auto;font-weight:700}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:12px;color:var(--ink-3);font-weight:700;text-align:right;padding:6px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.sub td{font-weight:700;background:var(--rose-soft)}
+.chart svg{width:100%;height:auto;display:block}
+
+/* settings */
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.li:last-child{border-bottom:0}
+.li .nm{flex:1;min-width:90px;font-weight:700;overflow-wrap:anywhere}
+.no{font-family:var(--f-mono);font-size:12px;color:var(--ink-3);min-width:20px}
+.price-in{display:flex;align-items:center;gap:6px;width:100%;padding-left:28px}
+.price-in input{max-width:150px;text-align:right}
+.price-in .unit{color:var(--ink-2);font-size:14px}
+.price-in .hist{font-size:12px;color:var(--ink-3);flex-basis:100%}
+.diag ul{list-style:none;margin:0;padding:0}
+.diag li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.diag .st{font-weight:700;min-width:36px}
+.diag .st.ok{color:var(--ok)} .diag .st.warn{color:var(--warn)} .diag .st.bad{color:var(--danger)}
+.diag code{font-family:var(--f-mono);font-size:12px;word-break:break-all;color:var(--ink-2)}
+
+/* nav */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs .wrap{display:grid;grid-template-columns:repeat(4,1fr);height:var(--nav-h)}
+.tabs button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;font-weight:700;color:var(--ink-3)}
+.tabs button svg{width:24px;height:24px}
+.tabs button[aria-current="page"]{color:var(--rose)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(40,16,28,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:100%;max-width:560px;border-radius:24px 24px 0 0;padding:22px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px;max-height:88vh;max-height:88dvh;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+.pin-dots{display:flex;gap:14px;justify-content:center;padding:6px 0}
+.pin-dots span{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink-3)}
+.pin-dots span.f{background:var(--rose);border-color:var(--rose)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pad button{min-height:56px;border-radius:16px;border:1px solid var(--line);background:var(--field);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.pin-msg{text-align:center;min-height:22px;font-size:14px;color:var(--danger)}
+.code-box{font-family:var(--f-mono);font-size:24px;letter-spacing:.12em;text-align:center;padding:14px;border-radius:14px;background:var(--field);border:1px dashed var(--rose-mid);user-select:all}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 14px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--ink);color:var(--paper);padding:10px 12px 10px 16px;border-radius:14px;display:flex;align-items:center;gap:10px;font-size:14px;width:max-content;max-width:calc(100% - 32px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast button{border:0;background:transparent;color:var(--rose-mid);font-weight:700;min-height:36px;padding:0 8px;text-decoration:underline;white-space:nowrap}
+.pop{animation:pop .3s ease-out}
+@keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="top"><div class="wrap">
+  <span class="ver">V 1.2.0 by S.H.KIM</span>
+  <span class="brand">하원 정산</span>
+  <span class="spacer"></span>
+  <span id="store-chip" class="chip mute"><span class="dot"></span>불러오는 중</span>
+</div></header>
+
+<main class="wrap">
+  <section id="view-today" class="view"></section>
+  <section id="view-cal" class="view" hidden></section>
+  <section id="view-settle" class="view" hidden></section>
+  <section id="view-settings" class="view" hidden></section>
+</main>
+
+<nav class="tabs" aria-label="메뉴"><div class="wrap">
+  <button data-tab="today" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.4 2.4 4.6-5"/></svg>오늘</button>
+  <button data-tab="cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>달력</button>
+  <button data-tab="settle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>정산</button>
+  <button data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>설정</button>
+</div></nav>
+
+<div id="modal-root"></div>
+<div id="toast-root" aria-live="polite"></div>
+<input type="file" id="restore-file" accept=".json,application/json,text/plain" hidden>
+
+<script>
+/* ===== core: 순수 계산 함수 (DOM 없음) ===== */
+const Core = (() => {
+  const pad2 = n => String(n).padStart(2, '0');
+  const ymOf = date => date.slice(0, 7);                 // "2026-10-28" -> "2026-10"
+  const monthDocId = ym => 'm' + ym;                       // "m2026-10"
+  const daysInMonth = ym => { const [y, m] = ym.split('-').map(Number); return new Date(y, m, 0).getDate(); };
+  const todayStr = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  const key = (childId, acadId) => childId + '|' + acadId;
+
+  // 적용 단가: 해당 날짜 이전(포함) 가장 최근 단가. 그보다 이른 날짜는 첫 단가.
+  function rateFor(acad, date) {
+    const rates = (acad && acad.rates ? acad.rates.slice() : []).sort((a, b) => a.from < b.from ? -1 : a.from > b.from ? 1 : 0);
+    if (!rates.length) return 0;
+    let r = rates[0].price;
+    for (const x of rates) { if (x.from <= date) r = x.price; else break; }
+    return Number(r) || 0;
+  }
+
+  // 월 집계: rows = [{childId, acadId, count, amount, rates:Set}]
+  function monthSummary(cfg, monthDoc) {
+    const acadById = Object.fromEntries((cfg.academies || []).map(a => [a.id, a]));
+    const map = new Map();
+    const visits = (monthDoc && monthDoc.v) || {};
+    for (const date of Object.keys(visits)) {
+      const day = visits[date] || {};
+      for (const k of Object.keys(day)) {
+        const n = Math.max(0, Math.floor(Number(day[k]) || 0));
+        if (!n) continue;
+        const [childId, acadId] = k.split('|');
+        const price = rateFor(acadById[acadId], date);
+        if (!map.has(k)) map.set(k, { childId, acadId, count: 0, amount: 0, rates: new Set() });
+        const r = map.get(k);
+        r.count += n; r.amount += n * price; r.rates.add(price);
+      }
+    }
+    const rows = [...map.values()];
+    const total = rows.reduce((s, r) => s + r.amount, 0);
+    const totalCount = rows.reduce((s, r) => s + r.count, 0);
+    return { rows, total, totalCount };
+  }
+
+  function yearTotals(cfg, monthDocs, year) {
+    const out = [];
+    for (let m = 1; m <= 12; m++) {
+      const ym = `${year}-${pad2(m)}`;
+      const s = monthSummary(cfg, monthDocs[ym]);
+      out.push({ ym, month: m, total: s.total, count: s.totalCount });
+    }
+    return { months: out, total: out.reduce((s, x) => s + x.total, 0), count: out.reduce((s, x) => s + x.count, 0) };
+  }
+
+  const csvCell = v => { const s = String(v ?? ''); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  // 수식 주입 방지: = + - @ 로 시작하는 텍스트 앞에 ' 추가
+  const safeText = v => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) ? "'" + s : s; };
+
+  function monthCsv(cfg, monthDoc, ym) {
+    const childName = id => safeText((cfg.children || []).find(c => c.id === id)?.name || '(삭제됨)');
+    const acad = id => (cfg.academies || []).find(a => a.id === id);
+    const lines = [['날짜', '자녀', '학원', '횟수', '단가(원)', '금액(원)', '메모'].join(',')];
+    const visits = (monthDoc && monthDoc.v) || {};
+    const memos = (monthDoc && monthDoc.memo) || {};
+    let total = 0;
+    for (const date of Object.keys(visits).sort()) {
+      for (const k of Object.keys(visits[date]).sort()) {
+        const n = Math.floor(Number(visits[date][k]) || 0); if (!n) continue;
+        const [c, a] = k.split('|'); const ac = acad(a); const p = rateFor(ac, date);
+        total += n * p;
+        lines.push([date, childName(c), safeText(ac?.name || '(삭제됨)'), n, p, n * p, safeText(memos[date] || '')].map(csvCell).join(','));
+      }
+    }
+    lines.push(['합계', '', '', '', '', total, ''].map(csvCell).join(','));
+    return '﻿' + lines.join('\r\n');
+  }
+
+  // 자녀별 집계: { childId: { total, count, acads: { acadId: {count, amount} }, months: [12개 금액] } }
+  function byChild(cfg, monthDocs, yms) {
+    const out = {};
+    yms.forEach((ym, mi) => {
+      const s = monthSummary(cfg, monthDocs[ym]);
+      for (const r of s.rows) {
+        const c = out[r.childId] || (out[r.childId] = { total: 0, count: 0, acads: {}, months: yms.map(() => 0) });
+        c.total += r.amount; c.count += r.count; c.months[mi] += r.amount;
+        const a = c.acads[r.acadId] || (c.acads[r.acadId] = { count: 0, amount: 0 });
+        a.count += r.count; a.amount += r.amount;
+      }
+    });
+    return out;
+  }
+  const yearYms = year => Array.from({ length: 12 }, (_, i) => `${year}-${pad2(i + 1)}`);
+
+  function yearCsv(cfg, monthDocs, year) {
+    const yms = yearYms(year);
+    const bc = byChild(cfg, monthDocs, yms);
+    const kids = (cfg.children || []).filter(c => bc[c.id]);
+    const y = yearTotals(cfg, monthDocs, year);
+    const lines = [['월', ...kids.map(k => csvCell(safeText(k.name) + '(원)')), '횟수', '합계(원)'].join(',')];
+    y.months.forEach((m, i) => lines.push([m.ym, ...kids.map(k => bc[k.id].months[i]), m.count, m.total].join(',')));
+    lines.push(['연간 합계', ...kids.map(k => bc[k.id].total), y.count, y.total].join(','));
+    return '﻿' + lines.join('\r\n');
+  }
+
+  const won = n => (Math.round(n) || 0).toLocaleString('ko-KR');
+
+  return { pad2, ymOf, monthDocId, daysInMonth, todayStr, key, rateFor, monthSummary, yearTotals, byChild, yearYms, monthCsv, yearCsv, won, safeText };
+})();
+
+
+</script>
+<script>
+/* ===== 하원 정산 앱 V 1.2.0 by S.H.KIM ===== */
+(() => {
+'use strict';
+const APP_VERSION = '1.2.0';
+// WEB: 로그인 없이 여는 독립 실행판(기기 저장). 아니면 claude.ai 계정 저장판.
+const WEB = !!window.HAKWON_WEB;
+const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const STANDALONE = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const C = Core;
+const uid8 = () => Math.random().toString(36).slice(2, 10);
+const WD = ['일', '월', '화', '수', '목', '금', '토'];
+const LOCAL_KEY = 'hakwon-settle-v1';
+const UNLOCK_MS = 5 * 60 * 1000;
+const BACKUP_DAYS = 7;
+const BASE_FROM = '2000-01-01';
+const DEFAULT_KIDS = ['첫째', '둘째'];
+const DEFAULT_ACADS = ['영어', '수학', '국어·논술', '피아노', '태권도', '미술', '수영', '과학'];
+const ICON = {
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  left: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>',
+  right: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>',
+  up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>',
+  down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
+  dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+  tick: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:22px;height:22px"><circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.8 2.7L16.2 9.5"/></svg>',
+};
+
+/* ---------- 상태 ---------- */
+const today = C.todayStr();
+const S = {
+  cfg: emptyCfg(), months: {}, loaded: false,
+  mode: 'loading', modeReason: '', uid: null, db: null, col: null, downloads: null, isOwner: true,
+  view: 'today', selDate: today, calYm: C.ymOf(today), setYm: C.ymOf(today), setYear: Number(today.slice(0, 4)), setTab: 'month',
+  selKids: new Set(), selAcads: new Set(),
+  unlockedUntil: 0, pinFails: 0, pinCooldownUntil: 0, lastError: null, pop: false,
+};
+function emptyCfg() { return { children: [], academies: [], sec: { enabled: false }, lastBackup: null, fileSeq: { date: '', n: 0 }, appVersion: APP_VERSION }; }
+const byOrder = (a, b) => a.order - b.order;
+const activeKids = () => S.cfg.children.filter(c => !c.archived).sort(byOrder);
+const activeAcads = () => S.cfg.academies.filter(a => !a.archived).sort(byOrder);
+const monthDoc = ym => S.months[ym] || (S.months[ym] = { v: {}, memo: {}, locked: false });
+const isLocked = ym => !!(S.months[ym] && S.months[ym].locked);
+const kidOf = id => S.cfg.children.find(c => c.id === id);
+const kidName = id => kidOf(id)?.name || '(삭제됨)';
+const acadOf = id => S.cfg.academies.find(a => a.id === id);
+const acadName = id => acadOf(id)?.name || '(삭제됨)';
+const kidVars = id => { const k = kidOf(id); const i = (k && Number.isInteger(k.color) ? k.color : 0) % 5; return `--kc:var(--k${i});--ks:var(--k${i}s)`; };
+const initial = name => esc([...String(name || '?')][0]);
+const ava = (id, sm) => `<span class="ava ${sm ? 'sm' : ''}" style="${kidVars(id)}" aria-hidden="true">${initial(kidName(id))}</span>`;
+function nextColor() { const used = new Set(activeKids().map(k => k.color)); for (let i = 0; i < 5; i++) if (!used.has(i)) return i; return S.cfg.children.length % 5; }
+
+/* 처음 실행 시 기본 자녀·학원 버튼 미리 등록 (1회) */
+function seedDefaults() {
+  if (S.cfg.seeded) return false;
+  if (!S.cfg.children.length) { DEFAULT_KIDS.forEach((n, i) => S.cfg.children.push({ id: 'c' + uid8(), name: n, order: i + 1, color: i })); }
+  else S.cfg.children.forEach((k, i) => { if (!Number.isInteger(k.color)) { k.color = i % 5; } });
+  if (!S.cfg.academies.length) { DEFAULT_ACADS.forEach((n, i) => S.cfg.academies.push({ id: 'a' + uid8(), name: n, order: i + 1, rates: [{ from: BASE_FROM, price: 0 }] })); }
+  S.cfg.seeded = true; S.cfg.appVersion = APP_VERSION;
+  return true;
+}
+
+/* ---------- 저장소 ---------- */
+const dirty = new Set(); let flushTimer = null; let chain = Promise.resolve();
+function markDirty(docId) { dirty.add(docId); clearTimeout(flushTimer); flushTimer = setTimeout(flush, 350); }
+function docBody(id) { return id === 'config' ? S.cfg : S.months[id.slice(1)]; }
+function flush() {
+  const ids = [...dirty]; dirty.clear();
+  saveLocal();
+  if (S.mode !== 'db') return;
+  for (const id of ids) {
+    const body = JSON.parse(JSON.stringify(docBody(id) || {}));
+    chain = chain.then(() => S.col.doc(id).set(body)).catch(e => storeError(e, id));
+  }
+}
+function storeError(e, where) {
+  S.lastError = { code: e && e.code || 'unknown', message: e && e.message || String(e), where, at: new Date().toISOString() };
+  saveLocal();
+  const general = '저장하지 못했습니다. 이 기기에 임시로 보관했어요.';
+  toast(S.isOwner ? `${general} (${S.lastError.code} · ${where})` : general);
+  renderChip();
+}
+function saveLocal() { try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ cfg: S.cfg, months: S.months, savedAt: Date.now() })); return true; } catch (e) { return false; } }
+function loadLocal() { try { const raw = localStorage.getItem(LOCAL_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
+function useLocal(reason) {
+  S.mode = 'local'; S.modeReason = reason;
+  const d = loadLocal();
+  if (d && d.cfg) { S.cfg = Object.assign(emptyCfg(), d.cfg); S.months = d.months || {}; }
+  if (seedDefaults()) markDirty('config');
+  S.loaded = true; renderAll();
+}
+async function initStore() {
+  const cl = window.claude;
+  if (WEB) {
+    useLocal('');
+    try { if (navigator.storage && navigator.storage.persist) S.persisted = await navigator.storage.persist(); } catch (e) { S.persisted = false; }
+    return;
+  }
+  if (!cl || typeof cl.use !== 'function') { useLocal('claude.ai 화면 밖에서 열려 계정 저장소를 쓸 수 없습니다.'); return; }
+  let user = null, db = null;
+  try { [user, db, S.downloads] = await Promise.all([cl.use('user'), cl.use('db'), cl.use('downloads')]); } catch (e) { /* null 처리 */ }
+  try { S.isOwner = user ? await user.isOwner() : true; } catch (e) { S.isOwner = true; }
+  let uid = null; try { uid = user ? await user.id() : null; } catch (e) { uid = null; }
+  if (!db || !uid) { useLocal(!db ? '계정 저장소가 이 화면에서 허용되지 않았습니다. (로그인 상태를 확인하세요)' : '사용자 확인이 되지 않았습니다.'); return; }
+  S.db = db; S.uid = uid; S.col = db.collection('data/users/' + uid); S.mode = 'db';
+  let first = true;
+  S.col.onSnapshot(snap => {
+    for (const d of snap.docs) {
+      if (dirty.has(d.id)) continue;
+      const body = d.data(); if (!body) continue;
+      if (d.id === 'config') S.cfg = Object.assign(emptyCfg(), JSON.parse(JSON.stringify(body)));
+      else if (d.id.startsWith('m')) S.months[d.id.slice(1)] = JSON.parse(JSON.stringify(body));
+    }
+    if (first) {
+      first = false;
+      if (snap.empty) { const loc = loadLocal(); if (loc && loc.cfg && (loc.cfg.children || []).length) { S.cfg = Object.assign(emptyCfg(), loc.cfg); S.months = loc.months || {}; Object.keys(S.months).forEach(ym => markDirty('m' + ym)); markDirty('config'); toast('이 기기에 있던 기록을 계정으로 옮겼습니다.'); } }
+      if (seedDefaults()) markDirty('config');
+    }
+    S.loaded = true; saveLocal(); renderAll();
+  }, e => { storeError(e, '실시간 연결'); });
+}
+
+/* ---------- 보안(PIN) ---------- */
+const hasCrypto = () => !!(window.crypto && crypto.subtle && crypto.getRandomValues);
+const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+function randSalt() { const a = new Uint8Array(16); crypto.getRandomValues(a); return b64(a); }
+async function hashSecret(secret, salt) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode(salt), iterations: 120000 }, key, 256);
+  return b64(bits);
+}
+function newRecoveryCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const a = new Uint8Array(8); crypto.getRandomValues(a);
+  const s = [...a].map(x => chars[x % chars.length]).join(''); return s.slice(0, 4) + '-' + s.slice(4);
+}
+const pinOn = () => !!(S.cfg.sec && S.cfg.sec.enabled && S.cfg.sec.pinHash);
+function guard(reason, fn) {
+  if (!pinOn() || Date.now() < S.unlockedUntil) { fn(); return; }
+  pinPrompt(reason, () => { S.unlockedUntil = Date.now() + UNLOCK_MS; fn(); });
+}
+
+/* ---------- 공통 UI ---------- */
+let toastTimer = null;
+function toast(msg, action) {
+  const root = $('#toast-root'); clearTimeout(toastTimer);
+  root.innerHTML = `<div class="toast" role="status"><span>${esc(msg)}</span>${action ? `<button type="button" id="toast-act">${esc(action.label)}</button>` : ''}</div>`;
+  if (action) $('#toast-act').onclick = () => { root.innerHTML = ''; action.fn(); };
+  toastTimer = setTimeout(() => { root.innerHTML = ''; }, action ? 6000 : 3200);
+}
+function openSheet(html, onMount) {
+  const root = $('#modal-root');
+  root.innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  $('#scrim').addEventListener('click', e => { if (e.target.id === 'scrim') closeSheet(); });
+  onMount && onMount($('.sheet', root));
+  const f = root.querySelector('input,button'); f && f.focus();
+}
+function closeSheet() { $('#modal-root').innerHTML = ''; }
+function confirmSheet(title, body, okLabel, onOk, danger) {
+  openSheet(`<h3>${esc(title)}</h3><div class="muted">${body}</div><div class="row"><button class="btn" id="c-no" type="button">취소</button><span class="spacer"></span><button class="btn ${danger ? 'danger' : 'primary'}" id="c-ok" type="button">${esc(okLabel)}</button></div>`, el => {
+    $('#c-no', el).onclick = closeSheet; $('#c-ok', el).onclick = () => { closeSheet(); onOk(); };
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+function pinPad(title, sub, onDone, extra) {
+  let val = '';
+  openSheet(`<h3>${esc(title)}</h3><div class="muted small" style="text-align:center">${esc(sub || '')}</div>
+    <div class="pin-dots" aria-hidden="true">${'<span></span>'.repeat(4)}</div><div class="pin-msg" id="pin-msg" role="alert"></div>
+    <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" data-k="${n}">${n}</button>`).join('')}<button type="button" data-k="x" style="font-size:15px">취소</button><button type="button" data-k="0">0</button><button type="button" data-k="b" style="font-size:15px">지움</button></div>
+    ${extra ? `<button class="btn ghost" type="button" id="pin-extra">${esc(extra.label)}</button>` : ''}`, el => {
+    const dots = () => el.querySelectorAll('.pin-dots span').forEach((s, i) => s.classList.toggle('f', i < val.length));
+    const msg = t => { $('#pin-msg', el).textContent = t || ''; };
+    const press = k => {
+      if (k === 'x') { closeSheet(); return; }
+      if (k === 'b') { val = val.slice(0, -1); dots(); return; }
+      if (val.length >= 4) return;
+      val += k; dots();
+      if (val.length === 4) { const v = val; setTimeout(async () => { const r = await onDone(v); if (r) { msg(r); val = ''; dots(); } }, 60); }
+    };
+    el.querySelectorAll('.pad button').forEach(b => b.onclick = () => press(b.dataset.k));
+    el.addEventListener('keydown', e => { if (/^[0-9]$/.test(e.key)) press(e.key); if (e.key === 'Backspace') press('b'); });
+    if (extra) $('#pin-extra', el).onclick = extra.fn;
+  });
+}
+function pinPrompt(reason, onOk) {
+  pinPad('PIN 입력', reason, async v => {
+    if (Date.now() < S.pinCooldownUntil) return `잠시 후 다시 시도하세요 (${Math.ceil((S.pinCooldownUntil - Date.now()) / 1000)}초)`;
+    let ok = false;
+    try { ok = (await hashSecret(v, S.cfg.sec.salt)) === S.cfg.sec.pinHash; } catch (e) { ok = false; }
+    if (ok) { S.pinFails = 0; closeSheet(); onOk(); return null; }
+    S.pinFails++;
+    if (S.pinFails >= 5) { S.pinFails = 0; S.pinCooldownUntil = Date.now() + 30000; return 'PIN이 5회 틀렸습니다. 30초 후 다시 시도하세요.'; }
+    return `PIN이 맞지 않습니다 (${S.pinFails}/5)`;
+  }, { label: 'PIN을 잊었어요', fn: () => recoverFlow(onOk) });
+}
+function setPinFlow(after) {
+  if (!hasCrypto()) { toast('이 화면에서는 암호화 기능을 쓸 수 없어 PIN을 설정할 수 없습니다. 기록은 그대로 쓸 수 있어요.'); return; }
+  pinPad('새 PIN 입력', '숫자 4자리', async v1 => {
+    pinPad('PIN 한 번 더', '같은 숫자를 다시 입력하세요', async v2 => {
+      if (v1 !== v2) return '처음 입력과 다릅니다. 다시 입력하세요.';
+      const salt = randSalt(), rsalt = randSalt(), code = newRecoveryCode();
+      S.cfg.sec = { enabled: true, salt, pinHash: await hashSecret(v2, salt), rsalt, recHash: await hashSecret(code, rsalt), setAt: new Date().toISOString() };
+      markDirty('config'); S.unlockedUntil = Date.now() + UNLOCK_MS;
+      showRecovery(code, after); return null;
+    });
+    return null;
+  });
+}
+function showRecovery(code, after) {
+  openSheet(`<h3>복구 코드</h3><p class="muted" style="margin:0">PIN을 잊었을 때 이 코드로 다시 설정합니다. <b>지금 한 번만 보여 드립니다.</b> 사진이나 메모로 보관하세요.</p>
+    <div class="code-box" id="rc">${esc(code)}</div>
+    <div class="row"><button class="btn" type="button" id="rc-copy">복사</button><span class="spacer"></span><button class="btn primary" type="button" id="rc-ok">보관했어요</button></div>`, el => {
+    $('#rc-copy', el).onclick = async () => { try { await navigator.clipboard.writeText(code); toast('복사했습니다.'); } catch (e) { const r = document.createRange(); r.selectNodeContents($('#rc', el)); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('코드를 선택했습니다. 길게 눌러 복사하세요.'); } };
+    $('#rc-ok', el).onclick = () => { closeSheet(); renderAll(); toast('PIN을 설정했습니다.'); after && after(); };
+  });
+}
+function recoverFlow(onOk) {
+  openSheet(`<h3>복구 코드로 PIN 재설정</h3><label class="field"><span>복구 코드 (예: ABCD-2345)</span><input type="text" id="rc-in" autocomplete="off" autocapitalize="characters"></label><div class="pin-msg" id="rc-msg"></div>
+    <div class="row"><button class="btn" type="button" id="rc-no">취소</button><span class="spacer"></span><button class="btn primary" type="button" id="rc-go">확인</button></div>`, el => {
+    $('#rc-no', el).onclick = closeSheet;
+    $('#rc-go', el).onclick = async () => {
+      if (Date.now() < S.pinCooldownUntil) { $('#rc-msg', el).textContent = '잠시 후 다시 시도하세요.'; return; }
+      const v = $('#rc-in', el).value.trim().toUpperCase().replace(/\s/g, '');
+      let ok = false; try { ok = (await hashSecret(v, S.cfg.sec.rsalt)) === S.cfg.sec.recHash; } catch (e) { ok = false; }
+      if (!ok) { S.pinFails++; if (S.pinFails >= 5) { S.pinFails = 0; S.pinCooldownUntil = Date.now() + 30000; } $('#rc-msg', el).textContent = '복구 코드가 맞지 않습니다.'; return; }
+      S.pinFails = 0; setPinFlow(onOk);
+    };
+  });
+}
+
+/* ---------- 파일 (백업/CSV) ---------- */
+function nextFileName(topic, ext) {
+  const d = today.replace(/-/g, '');
+  const fs = S.cfg.fileSeq && S.cfg.fileSeq.date === d ? S.cfg.fileSeq : { date: d, n: 0 };
+  fs.n += 1; S.cfg.fileSeq = fs; markDirty('config');
+  return `${d}_${C.pad2(fs.n)}_${topic}.${ext}`;
+}
+// 독립 실행판: 아이폰 공유 창(파일에 저장) → 안 되면 내려받기
+async function webSave(filename, data, mime) {
+  const blob = new Blob([data], { type: mime });
+  try {
+    const file = new File([blob], filename, { type: mime });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: filename });
+      return 'ok';
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return 'cancel'; /* 공유 불가 → 내려받기로 */ }
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href = url; a.download = filename; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  return 'ok';
+}
+async function saveFile(topic, ext, data) {
+  if (WEB) {
+    const filename = nextFileName(topic, ext);
+    try {
+      const r = await webSave(filename, data, ext === 'csv' ? 'text/csv' : 'application/json');
+      if (r === 'cancel') { toast('파일 저장을 취소했습니다.'); return false; }
+      toast(`${filename} 저장했습니다.`); return true;
+    } catch (e) {
+      S.lastError = { code: e && e.name || 'unknown', message: e && e.message || String(e), where: '파일 저장', at: new Date().toISOString() };
+      toast(`파일을 저장하지 못했습니다 (${S.lastError.code})`); return false;
+    }
+  }
+  if (!S.downloads) { toast('이 화면에서는 파일 저장을 쓸 수 없습니다. 설정 > 자가 진단에서 원인을 확인하세요.'); return false; }
+  const filename = nextFileName(topic, ext);
+  try { await S.downloads.save({ filename, data }); toast(`${filename} 저장했습니다.`); return true; }
+  catch (e) {
+    if (e && e.code === 'declined') { toast('파일 저장을 취소했습니다.'); return false; }
+    S.lastError = { code: e && e.code || 'unknown', message: e && e.message || String(e), where: '파일 저장', at: new Date().toISOString() };
+    toast(S.isOwner ? `파일을 저장하지 못했습니다 (${S.lastError.code})` : '파일을 저장하지 못했습니다.'); return false;
+  }
+}
+async function doBackup() {
+  const data = JSON.stringify({ app: 'hakwon-settle', version: APP_VERSION, exportedAt: new Date().toISOString(), cfg: S.cfg, months: S.months }, null, 1);
+  const ok = await saveFile('학원정산_백업', 'json', data);
+  if (ok) { S.cfg.lastBackup = new Date().toISOString(); markDirty('config'); renderAll(); }
+}
+const validBackup = d => d && d.app === 'hakwon-settle' && d.cfg && Array.isArray(d.cfg.children) && Array.isArray(d.cfg.academies) && d.months && typeof d.months === 'object';
+$('#restore-file').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  let d; try { d = JSON.parse(await f.text()); } catch (er) { toast('백업 파일을 읽지 못했습니다. .json 백업 파일인지 확인하세요.'); return; }
+  if (!validBackup(d)) { toast('이 앱의 백업 파일이 아닙니다.'); return; }
+  confirmSheet('백업으로 복원', `현재 기록을 <b>${esc((d.exportedAt || '').slice(0, 10))}</b> 백업 내용(자녀 ${d.cfg.children.length}명, 학원 ${d.cfg.academies.length}곳, ${Object.keys(d.months).length}개월)으로 바꿉니다.`, '복원', () => {
+    const oldMonths = Object.keys(S.months);
+    S.cfg = Object.assign(emptyCfg(), d.cfg); S.cfg.seeded = true; S.months = JSON.parse(JSON.stringify(d.months));
+    markDirty('config'); Object.keys(S.months).forEach(ym => markDirty('m' + ym));
+    if (S.mode === 'db') oldMonths.filter(ym => !(ym in S.months)).forEach(ym => { chain = chain.then(() => S.col.doc('m' + ym).delete()).catch(er => storeError(er, '복원 정리')); });
+    renderAll(); toast('복원했습니다.');
+  }, true);
+});
+
+/* ---------- 기록 동작 ---------- */
+function addVisits(date, pairs, delta) {
+  const ym = C.ymOf(date);
+  if (isLocked(ym)) { toast(`${+ym.slice(5)}월은 정산 완료로 잠겨 있습니다.`); return false; }
+  const md = monthDoc(ym); md.v = md.v || {}; md.v[date] = md.v[date] || {};
+  for (const [c, a] of pairs) {
+    const k = C.key(c, a); const n = Math.max(0, (md.v[date][k] || 0) + delta);
+    if (n) md.v[date][k] = n; else delete md.v[date][k];
+  }
+  if (!Object.keys(md.v[date]).length) delete md.v[date];
+  markDirty('m' + ym); return true;
+}
+function doCheck() {
+  const date = S.selDate;
+  const kids = activeKids().filter(k => S.selKids.has(k.id)), acads = activeAcads().filter(a => S.selAcads.has(a.id));
+  if (!kids.length || !acads.length) return;
+  const pairs = []; kids.forEach(k => acads.forEach(a => pairs.push([k.id, a.id])));
+  if (!addVisits(date, pairs, +1)) return;
+  const amt = pairs.reduce((s, [, a]) => s + C.rateFor(acadOf(a), date), 0);
+  const zero = acads.filter(a => !C.rateFor(a, date)).map(a => a.name);
+  S.selAcads.clear(); S.pop = true; render();
+  toast(zero.length ? `${pairs.length}건 기록 · 단가 미설정: ${zero.join(', ')}` : `${pairs.length}건 기록했어요 · ${C.won(amt)}원`, { label: '되돌리기', fn: () => { addVisits(date, pairs, -1); render(); toast('방금 기록을 취소했습니다.'); } });
+}
+
+/* ---------- 렌더: 오늘 ---------- */
+function dayLabel(date) { const d = new Date(date + 'T00:00:00'); return { big: `${d.getMonth() + 1}월 ${d.getDate()}일 ${WD[d.getDay()]}요일`, small: `${d.getFullYear()}년` }; }
+function shiftDate(date, n) { const d = new Date(date + 'T00:00:00'); d.setDate(d.getDate() + n); return C.todayStr(d); }
+function needBackup() {
+  const hasData = Object.values(S.months).some(m => m && m.v && Object.keys(m.v).length);
+  if (!hasData) return false;
+  if (!S.cfg.lastBackup) return true;
+  return (Date.now() - Date.parse(S.cfg.lastBackup)) / 86400000 >= BACKUP_DAYS;
+}
+function kidCostHtml(summary, kids, opts = {}) {
+  // 자녀별 학원 비용 + 총비용
+  const per = kids.map(k => {
+    const rows = summary.rows.filter(r => r.childId === k.id).sort((a, b) => (acadOf(a.acadId)?.order ?? 99) - (acadOf(b.acadId)?.order ?? 99));
+    return { k, rows, total: rows.reduce((s, r) => s + r.amount, 0), count: rows.reduce((s, r) => s + r.count, 0) };
+  });
+  const max = Math.max(1, ...per.map(p => p.total));
+  return `<div class="kc-list">${per.map(p => `<div class="kc" style="${kidVars(p.k.id)}">
+      <div class="kc-top">${ava(p.k.id)}<span class="nm">${esc(p.k.name)}</span><span class="muted small num">${p.count}회</span><span class="amt num">${C.won(p.total)}원</span></div>
+      <div class="bar" style="margin-left:54px"><i style="width:${Math.round(p.total / max * 100)}%"></i></div>
+      ${p.rows.length ? `<div class="kc-acs">${p.rows.map(r => `<span class="pill num">${esc(acadName(r.acadId))} ${r.count}회 · ${C.won(r.amount)}원</span>`).join('')}</div>` : `<div class="kc-acs"><span class="hint">기록 없음</span></div>`}
+    </div>`).join('')}</div>
+    <div class="grand"><span class="lb">${esc(opts.label || '총비용')}</span><span class="muted small num">${summary.totalCount}회</span><b class="num">${C.won(summary.total)}원</b></div>`;
+}
+function renderToday() {
+  const el = $('#view-today');
+  if (!S.loaded) { el.innerHTML = `<div class="card"><span class="muted">기록을 불러오는 중입니다…</span></div>`; return; }
+  const kids = activeKids(), acads = activeAcads();
+  // 선택 목록 정리 (삭제된 항목 제거)
+  [...S.selKids].forEach(id => { if (!kids.some(k => k.id === id)) S.selKids.delete(id); });
+  [...S.selAcads].forEach(id => { if (!acads.some(a => a.id === id)) S.selAcads.delete(id); });
+  const date = S.selDate, ym = C.ymOf(date), md = S.months[ym] || {}, day = (md.v || {})[date] || {}, locked = isLocked(ym);
+  const lab = dayLabel(date);
+  const nK = S.selKids.size, nA = S.selAcads.size;
+  const prevAmt = [...S.selKids].length * [...S.selAcads].reduce((s, a) => s + C.rateFor(acadOf(a), date), 0);
+  const defaultNames = kids.some(k => DEFAULT_KIDS.includes(k.name));
+  const zeroAcads = acads.filter(a => !C.rateFor(a, date));
+
+  // 오늘 기록 (자녀별)
+  const daySum = C.monthSummary(S.cfg, { v: { [date]: day } });
+  const recHtml = kids.concat(S.cfg.children.filter(c => c.archived)).map(k => {
+    const rows = daySum.rows.filter(r => r.childId === k.id); if (!rows.length) return '';
+    const sub = rows.reduce((s, r) => s + r.amount, 0);
+    return `<div class="rec-kid"><div class="rec-head">${ava(k.id, true)}<b>${esc(k.name)}</b><span class="spacer"></span><b class="num">${C.won(sub)}원</b></div>
+      ${rows.map(r => `<div class="rec-line"><span>${esc(acadName(r.acadId))}</span>${r.count > 1 ? `<span class="hint num">×${r.count}</span>` : ''}<span class="amt num">${C.won(r.amount)}원</span>${locked ? '' : `<button type="button" class="minus" data-sub="${r.childId}|${r.acadId}" aria-label="${esc(k.name)} ${esc(acadName(r.acadId))} 1회 빼기">−</button>`}</div>`).join('')}</div>`;
+  }).join('');
+
+  el.innerHTML = `
+    ${needBackup() ? `<div class="banner"><b>${S.cfg.lastBackup ? `마지막 백업 후 ${Math.floor((Date.now() - Date.parse(S.cfg.lastBackup)) / 86400000)}일이 지났어요.` : '아직 백업 파일이 없어요.'}</b><button class="btn sm" type="button" id="bk-now">${ICON.dl}지금 백업</button></div>` : ''}
+    ${S.mode === 'local' && !WEB ? `<div class="banner info"><b>지금은 이 브라우저에만 임시 저장됩니다. ${esc(S.modeReason)}</b></div>` : ''}
+    ${WEB && IOS && !STANDALONE ? `<div class="banner info"><b>홈 화면에 추가해서 쓰세요. 사파리에서 7일 넘게 열지 않으면 아이폰이 기록을 지울 수 있어요.</b><button class="btn sm" type="button" id="go-guide">방법 보기</button></div>` : ''}
+    ${defaultNames || zeroAcads.length ? `<div class="banner info"><b>${defaultNames ? '자녀 이름' : ''}${defaultNames && zeroAcads.length ? '과 ' : ''}${zeroAcads.length ? `학원 단가(${zeroAcads.length}곳 미설정)` : ''}를 설정에서 입력해 주세요.</b><button class="btn sm" type="button" id="go-set">설정으로</button></div>` : ''}
+    <div class="datebar">
+      <button class="icon-btn" type="button" id="d-prev" aria-label="전날">${ICON.left}</button>
+      <div class="d"><strong>${lab.big}</strong><small>${lab.small}${date === today ? ' · 오늘' : ` · <button type="button" class="btn ghost sm" id="d-today" style="min-height:28px;padding:0 4px">오늘로</button>`}</small></div>
+      <button class="icon-btn" type="button" id="d-next" aria-label="다음날">${ICON.right}</button>
+    </div>
+    ${locked ? `<div class="locked-note">${ICON.lock}${+ym.slice(5)}월은 정산 완료로 잠겨 있습니다. 정산 탭에서 잠금을 풀 수 있어요.</div>` : ''}
+
+    <div class="card">
+      <div class="card-head"><span class="step">1</span><h3>누가 다녀왔나요?</h3><span class="spacer"></span>${kids.length > 1 ? `<button type="button" class="btn ghost sm" id="k-all">${nK === kids.length ? '모두 해제' : '모두 선택'}</button>` : ''}</div>
+      <div class="kids">${kids.map(k => `<button type="button" class="kid" style="${kidVars(k.id)}" data-kid="${k.id}" aria-pressed="${S.selKids.has(k.id)}" ${locked ? 'disabled' : ''}>${ava(k.id)}<span class="nm">${esc(k.name)}</span><span class="tick">${ICON.tick}</span></button>`).join('') || '<span class="hint">설정에서 자녀를 추가하세요.</span>'}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="step">2</span><h3>어느 학원인가요?</h3><span class="spacer"></span><span class="hint">여러 개 선택 가능</span></div>
+      <div class="acs">${acads.map(a => { const p = C.rateFor(a, date); return `<button type="button" class="ac" data-ac="${a.id}" aria-pressed="${S.selAcads.has(a.id)}" ${locked ? 'disabled' : ''}><span class="nm">${esc(a.name)}</span><span class="pr num ${p ? '' : 'zero'}">${p ? `회당 ${C.won(p)}원` : '단가 미설정'}</span><span class="tick">${ICON.tick}</span></button>`; }).join('') || '<span class="hint">설정에서 학원을 추가하세요.</span>'}</div>
+    </div>
+
+    <div class="go">
+      <button type="button" class="btn primary big" id="do-check" ${nK && nA && !locked ? '' : 'disabled'}>${ICON.check}${nK && nA ? `하원 체크하기 · ${nK * nA}건` : '자녀와 학원을 골라 주세요'}</button>
+      <div class="preview num">${nK && nA ? `${[...S.selKids].map(kidName).map(esc).join('·')} × ${activeAcads().filter(a => S.selAcads.has(a.id)).map(a => esc(a.name)).join('·')} = <b>${C.won(prevAmt)}원</b>` : ''}</div>
+    </div>
+
+    <div class="card ${S.pop ? 'pop' : ''}">
+      <div class="card-head"><h3>${date === today ? '오늘' : lab.big.split(' ').slice(0, 2).join(' ')} 하원 기록</h3><span class="spacer"></span><b class="num">${C.won(daySum.total)}원</b></div>
+      ${recHtml || '<span class="hint">아직 기록이 없어요. 위에서 자녀와 학원을 고르고 체크하세요.</span>'}
+      <label class="field"><span>메모 (보강·결석 등)</span><textarea id="memo" ${locked ? 'disabled' : ''} placeholder="예: 수학 보강, 피아노 결석">${esc((md.memo || {})[date] || '')}</textarea></label>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>${+ym.slice(5)}월 자녀별 하원비</h3><span class="spacer"></span><button type="button" class="btn ghost sm" id="go-settle">자세히</button></div>
+      ${kidCostHtml(C.monthSummary(S.cfg, md), kids, { label: `${+ym.slice(5)}월 총비용` })}
+    </div>`;
+  S.pop = false;
+
+  el.querySelectorAll('[data-kid]').forEach(b => b.onclick = () => { const id = b.dataset.kid; S.selKids.has(id) ? S.selKids.delete(id) : S.selKids.add(id); render(); });
+  el.querySelectorAll('[data-ac]').forEach(b => b.onclick = () => { const id = b.dataset.ac; S.selAcads.has(id) ? S.selAcads.delete(id) : S.selAcads.add(id); render(); });
+  const ka = $('#k-all', el); if (ka) ka.onclick = () => { if (S.selKids.size === kids.length) S.selKids.clear(); else kids.forEach(k => S.selKids.add(k.id)); render(); };
+  $('#do-check', el).onclick = doCheck;
+  el.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => { const [c, a] = b.dataset.sub.split('|'); guard('기록을 빼려면 PIN이 필요합니다.', () => { if (addVisits(date, [[c, a]], -1)) { render(); toast(`${kidName(c)} · ${acadName(a)} 1회 뺐습니다.`); } }); });
+  $('#d-prev', el).onclick = () => { S.selDate = shiftDate(date, -1); render(); };
+  $('#d-next', el).onclick = () => { S.selDate = shiftDate(date, 1); render(); };
+  const dt = $('#d-today', el); if (dt) dt.onclick = () => { S.selDate = today; render(); };
+  const bk = $('#bk-now', el); if (bk) bk.onclick = doBackup;
+  const gs = $('#go-set', el); if (gs) gs.onclick = () => go('settings');
+  const gg = $('#go-guide', el); if (gg) gg.onclick = () => { go('settings'); const g = $('#guide-card'); if (g) g.scrollIntoView({ block: 'start' }); };
+  $('#go-settle', el).onclick = () => { S.setYm = ym; S.setTab = 'month'; go('settle'); };
+  const memo = $('#memo', el); let mt;
+  const commitMemo = () => {
+    clearTimeout(mt); S.pendingMemo = null;
+    if (isLocked(ym)) return;
+    const m = monthDoc(ym); m.memo = m.memo || {}; const t = memo.value.slice(0, 500);
+    if ((m.memo[date] || '') === (t.trim() ? t : '')) return;
+    if (t.trim()) m.memo[date] = t; else delete m.memo[date]; markDirty('m' + ym);
+  };
+  memo.oninput = () => { clearTimeout(mt); S.pendingMemo = commitMemo; mt = setTimeout(commitMemo, 600); };
+  memo.onblur = () => { if (S.pendingMemo) commitMemo(); };
+}
+
+/* ---------- 렌더: 달력 ---------- */
+function shiftYm(ym, n) { let [y, m] = ym.split('-').map(Number); m += n; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return `${y}-${C.pad2(m)}`; }
+function renderCal() {
+  const el = $('#view-cal'); const ym = S.calYm, md = S.months[ym] || {}, [y, m] = ym.split('-').map(Number);
+  const first = new Date(y, m - 1, 1).getDay(), n = C.daysInMonth(ym); const sum = C.monthSummary(S.cfg, md);
+  let cells = WD.map((w, i) => `<div class="wd ${i === 0 ? 'sun' : ''}">${w}</div>`).join('');
+  for (let i = 0; i < first; i++) cells += '<div class="cell blank"></div>';
+  for (let d = 1; d <= n; d++) {
+    const date = `${ym}-${C.pad2(d)}`; const day = (md.v || {})[date] || {}; const memo = (md.memo || {})[date];
+    const dots = []; Object.entries(day).forEach(([k, c]) => { for (let i = 0; i < c && dots.length < 6; i++) dots.push(k.split('|')[0]); });
+    cells += `<button type="button" class="cell ${dots.length ? 'has' : ''} ${date === today ? 'today' : ''}" data-date="${date}" aria-label="${m}월 ${d}일 ${Object.values(day).reduce((s, x) => s + x, 0)}회${memo ? ', 메모 있음' : ''}"><span class="num">${d}</span>${dots.length ? `<span class="dots">${dots.map(id => `<i style="${kidVars(id)}"></i>`).join('')}</span>` : ''}${memo ? '<span class="memo-dot"></span>' : ''}</button>`;
+  }
+  const kids = activeKids();
+  el.innerHTML = `<div class="datebar"><button class="icon-btn" type="button" id="c-prev" aria-label="이전 달">${ICON.left}</button><div class="d"><strong>${y}년 ${m}월</strong><small class="num">${sum.totalCount}회 · ${C.won(sum.total)}원${isLocked(ym) ? ' · 정산 완료' : ''}</small></div><button class="icon-btn" type="button" id="c-next" aria-label="다음 달">${ICON.right}</button></div>
+    <div class="card"><div class="cal">${cells}</div>
+      <div class="legend">${kids.map(k => `<span style="${kidVars(k.id)}"><i></i>${esc(k.name)}</span>`).join('')}<span><i style="background:var(--sky);border-radius:2px"></i>메모</span></div>
+      <p class="hint" style="margin:0">점 하나가 하원 1회입니다. 날짜를 누르면 그날 기록을 보고 고칠 수 있어요.</p></div>`;
+  $('#c-prev', el).onclick = () => { S.calYm = shiftYm(ym, -1); render(); };
+  $('#c-next', el).onclick = () => { S.calYm = shiftYm(ym, 1); render(); };
+  el.querySelectorAll('[data-date]').forEach(b => b.onclick = () => { S.selDate = b.dataset.date; go('today'); });
+}
+
+/* ---------- 렌더: 정산 ---------- */
+function kidsForReport(ids) {
+  const act = activeKids(); const arch = S.cfg.children.filter(c => c.archived && ids.has(c.id));
+  return act.concat(arch);
+}
+function renderSettle() {
+  const el = $('#view-settle');
+  const seg = `<div class="seg" role="group" aria-label="보기"><button type="button" data-seg="month" aria-pressed="${S.setTab === 'month'}">월간 정산</button><button type="button" data-seg="year" aria-pressed="${S.setTab === 'year'}">연간 누계</button></div>`;
+  el.innerHTML = seg + (S.setTab === 'month' ? settleMonthHtml() : settleYearHtml());
+  el.querySelectorAll('[data-seg]').forEach(b => b.onclick = () => { S.setTab = b.dataset.seg; render(); });
+  if (S.setTab === 'month') {
+    const ym = S.setYm;
+    $('#s-prev', el).onclick = () => { S.setYm = shiftYm(ym, -1); render(); };
+    $('#s-next', el).onclick = () => { S.setYm = shiftYm(ym, 1); render(); };
+    $('#s-csv', el).onclick = () => saveFile(`학원정산_${ym}`, 'csv', C.monthCsv(S.cfg, S.months[ym], ym));
+    const lk = $('#s-lock', el);
+    if (lk) lk.onclick = () => {
+      const s = C.monthSummary(S.cfg, S.months[ym]);
+      confirmSheet(`${+ym.slice(5)}월 정산 완료`, `총 <b>${s.totalCount}회 · ${C.won(s.total)}원</b>으로 정산을 마치고 이 달 기록을 잠급니다. 잠근 뒤에는 PIN으로만 풀 수 있어요. 백업 파일도 함께 저장합니다.`, '정산 완료', () => {
+        const md = monthDoc(ym); md.locked = true; md.lockedAt = new Date().toISOString(); md.lockedTotal = s.total; markDirty('m' + ym); render(); toast(`${+ym.slice(5)}월 정산을 완료했습니다.`);
+        setTimeout(doBackup, 400);
+      });
+    };
+    const ul = $('#s-unlock', el);
+    if (ul) ul.onclick = () => guard('잠금을 풀려면 PIN이 필요합니다.', () => confirmSheet('잠금 해제', `${+ym.slice(5)}월 기록을 다시 고칠 수 있게 합니다.`, '잠금 해제', () => { const md = monthDoc(ym); md.locked = false; delete md.lockedAt; markDirty('m' + ym); render(); toast('잠금을 해제했습니다.'); }));
+  } else {
+    $('#y-prev', el).onclick = () => { S.setYear--; render(); };
+    $('#y-next', el).onclick = () => { S.setYear++; render(); };
+    $('#y-csv', el).onclick = () => saveFile(`학원정산_${S.setYear}년`, 'csv', C.yearCsv(S.cfg, S.months, S.setYear));
+    el.querySelectorAll('[data-ym]').forEach(b => b.onclick = () => { S.setYm = b.dataset.ym; S.setTab = 'month'; render(); });
+  }
+}
+function settleMonthHtml() {
+  const ym = S.setYm, md = S.months[ym], s = C.monthSummary(S.cfg, md), locked = isLocked(ym), [y, m] = ym.split('-').map(Number);
+  const kids = kidsForReport(new Set(s.rows.map(r => r.childId)));
+  const cards = kids.map(k => {
+    const rows = s.rows.filter(r => r.childId === k.id).sort((a, b) => (acadOf(a.acadId)?.order ?? 99) - (acadOf(b.acadId)?.order ?? 99));
+    const tot = rows.reduce((t, r) => t + r.amount, 0), cnt = rows.reduce((t, r) => t + r.count, 0);
+    return `<div class="kcard" style="${kidVars(k.id)}"><div class="kcard-head">${ava(k.id)}<span class="nm">${esc(k.name)}</span><span class="amt"><b class="num">${C.won(tot)}원</b><small class="num">${cnt}회</small></span></div>
+      ${rows.length ? `<div class="lines">${rows.map(r => `<div class="ln"><span>${esc(acadName(r.acadId))}</span><span class="calc num">${r.count}회 × ${r.rates.size > 1 ? '단가 변동' : C.won([...r.rates][0]) + '원'}</span><span class="amt num">${C.won(r.amount)}원</span></div>`).join('')}</div>` : '<span class="hint">이 달 기록 없음</span>'}</div>`;
+  }).join('');
+  return `<div class="datebar"><button class="icon-btn" type="button" id="s-prev" aria-label="이전 달">${ICON.left}</button><div class="d"><strong>${y}년 ${m}월</strong><small>${locked ? '정산 완료' : '정산 전'}</small></div><button class="icon-btn" type="button" id="s-next" aria-label="다음 달">${ICON.right}</button></div>
+  <div class="card"><div class="row"><span class="hint">${m}월 총 하원비</span><span class="spacer"></span>${locked ? `<span class="badge lock">${ICON.lock}정산 완료 ${esc((md.lockedAt || '').slice(5, 10).replace('-', '/'))}</span>` : '<span class="badge open">정산 전</span>'}</div>
+    <div class="total-big"><b class="num">${C.won(s.total)}</b><span>원</span><span class="spacer"></span><span class="muted num">${s.totalCount}회</span></div>
+    ${cards}
+    ${s.rows.some(r => r.rates.size > 1) ? '<p class="hint" style="margin:0">"단가 변동"은 이 달 중에 단가가 바뀐 학원입니다. 금액은 날짜별 단가로 계산했어요.</p>' : ''}
+  </div>
+  <div class="row"><button class="btn" type="button" id="s-csv">${ICON.dl}CSV 내보내기</button><span class="spacer"></span>
+  ${locked ? `<button class="btn" type="button" id="s-unlock">잠금 해제</button>` : `<button class="btn primary" type="button" id="s-lock" ${s.rows.length ? '' : 'disabled'}>정산 완료</button>`}</div>`;
+}
+function settleYearHtml() {
+  const year = S.setYear, yms = C.yearYms(year), y = C.yearTotals(S.cfg, S.months, year), bc = C.byChild(S.cfg, S.months, yms);
+  const kids = kidsForReport(new Set(Object.keys(bc)));
+  const W = 340, H = 210, padL = 8, padB = 26, padT = 24, bw = (W - padL * 2) / 12, max = Math.max(...y.months.map(x => x.total), 1);
+  const scale = v => v / max * (H - padB - padT);
+  const bars = y.months.map((x, i) => {
+    const bx = padL + i * bw + 4, w = bw - 8; let top = H - padB; let segs = '';
+    kids.forEach(k => { const v = bc[k.id] ? bc[k.id].months[i] : 0; if (!v) return; const h = Math.max(scale(v), 2); top -= h; segs += `<rect x="${bx}" y="${top}" width="${w}" height="${h}" fill="var(--kc)" style="${kidVars(k.id)}"></rect>`; });
+    const lbl = x.total ? (x.total >= 10000 ? `${(x.total / 10000).toFixed(1).replace(/\.0$/, '')}만` : C.won(x.total)) : '';
+    return `<g>${segs}${lbl ? `<text x="${bx + w / 2}" y="${top - 5}" text-anchor="middle" font-size="9.5" fill="var(--ink-2)">${lbl}</text>` : ''}<text x="${bx + w / 2}" y="${H - 9}" text-anchor="middle" font-size="10.5" fill="var(--ink-3)">${x.month}</text></g>`;
+  }).join('');
+  const kidCards = kids.map(k => {
+    const c = bc[k.id] || { total: 0, count: 0, acads: {} };
+    const ac = Object.entries(c.acads).sort((a, b) => b[1].amount - a[1].amount);
+    return `<div class="kcard" style="${kidVars(k.id)}"><div class="kcard-head">${ava(k.id)}<span class="nm">${esc(k.name)}</span><span class="amt"><b class="num">${C.won(c.total)}원</b><small class="num">${c.count}회</small></span></div>
+      ${ac.length ? `<div class="lines">${ac.map(([id, v]) => `<div class="ln"><span>${esc(acadName(id))}</span><span class="calc num">${v.count}회</span><span class="amt num">${C.won(v.amount)}원</span></div>`).join('')}</div>` : '<span class="hint">올해 기록 없음</span>'}</div>`;
+  }).join('');
+  return `<div class="datebar"><button class="icon-btn" type="button" id="y-prev" aria-label="이전 해">${ICON.left}</button><div class="d"><strong>${year}년</strong><small>연간 누계</small></div><button class="icon-btn" type="button" id="y-next" aria-label="다음 해">${ICON.right}</button></div>
+  <div class="card"><span class="hint">${year}년 총 하원비</span><div class="total-big"><b class="num">${C.won(y.total)}</b><span>원</span><span class="spacer"></span><span class="muted num">${y.count}회</span></div>
+    <div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${year}년 월별 자녀별 하원비 막대그래프"><line x1="${padL}" x2="${W - padL}" y1="${H - padB}" y2="${H - padB}" stroke="var(--line)"></line>${bars}</svg></div>
+    <div class="legend">${kids.map(k => `<span style="${kidVars(k.id)}"><i></i>${esc(k.name)} ${C.won(bc[k.id]?.total || 0)}원</span>`).join('')}</div></div>
+  <div class="card"><h3>자녀별 연간 비용</h3>${kidCards}</div>
+  <div class="card"><h3>월별 표</h3><div class="tbl-wrap"><table><thead><tr><th>월</th>${kids.map(k => `<th>${esc(k.name)}</th>`).join('')}<th>합계</th><th>상태</th></tr></thead><tbody>
+    ${y.months.map((x, i) => `<tr><td><button type="button" class="btn ghost sm" data-ym="${x.ym}" style="padding:0;min-height:32px">${x.month}월</button></td>${kids.map(k => `<td>${C.won(bc[k.id]?.months[i] || 0)}</td>`).join('')}<td><b>${C.won(x.total)}</b></td><td>${isLocked(x.ym) ? '완료' : x.total ? '진행' : '-'}</td></tr>`).join('')}
+    <tr class="sub"><td>합계</td>${kids.map(k => `<td>${C.won(bc[k.id]?.total || 0)}</td>`).join('')}<td>${C.won(y.total)}</td><td></td></tr></tbody></table></div></div>
+  <div class="row"><button class="btn" type="button" id="y-csv">${ICON.dl}연간 CSV 내보내기</button></div>`;
+}
+
+/* ---------- 렌더: 설정 ---------- */
+function acadHasRecords(id, lockedOnly) {
+  return Object.entries(S.months).some(([ym, m]) => (!lockedOnly || m.locked) && m.v && Object.values(m.v).some(day => Object.keys(day).some(k => k.endsWith('|' + id) && day[k] > 0)));
+}
+function renderSettings() {
+  const el = $('#view-settings'); const kids = activeKids(), acads = activeAcads();
+  const kidRows = kids.map((k, i) => `<div class="li">${ava(k.id, true)}<span class="nm">${esc(k.name)}</span>
+    <button class="icon-btn" type="button" data-kup="${k.id}" aria-label="${esc(k.name)} 위로" ${i === 0 ? 'disabled' : ''}>${ICON.up}</button><button class="icon-btn" type="button" data-kdn="${k.id}" aria-label="${esc(k.name)} 아래로" ${i === kids.length - 1 ? 'disabled' : ''}>${ICON.down}</button>
+    <button class="btn sm" type="button" data-kren="${k.id}">이름</button><button class="btn sm danger" type="button" data-kdel="${k.id}">삭제</button></div>`).join('');
+  const acRows = acads.map((a, i) => {
+    const cur = C.rateFor(a, today); const rs = [...(a.rates || [])].sort((x, y) => x.from < y.from ? 1 : -1);
+    return `<div class="li"><span class="no">${C.pad2(i + 1)}</span><span class="nm">${esc(a.name)}</span>
+      <button class="icon-btn" type="button" data-aup="${a.id}" aria-label="${esc(a.name)} 위로" ${i === 0 ? 'disabled' : ''}>${ICON.up}</button><button class="icon-btn" type="button" data-adn="${a.id}" aria-label="${esc(a.name)} 아래로" ${i === acads.length - 1 ? 'disabled' : ''}>${ICON.down}</button>
+      <button class="btn sm" type="button" data-aren="${a.id}">이름</button><button class="btn sm danger" type="button" data-adel="${a.id}">삭제</button>
+      <div class="price-in"><span class="unit">회당</span><input type="number" id="price-${a.id}" data-price="${a.id}" inputmode="numeric" min="0" step="100" value="${cur || ''}" placeholder="단가 입력" aria-label="${esc(a.name)} 회당 단가"><span class="unit">원</span><button class="btn sm soft" type="button" data-psave="${a.id}" hidden>저장</button>
+      ${rs.length > 1 ? `<span class="hist num">${rs.map(r => `${r.from === BASE_FROM ? '처음' : esc(r.from)}~ ${C.won(r.price)}원`).join(' · ')}</span>` : ''}</div></div>`;
+  }).join('');
+  const sec = S.cfg.sec || {};
+  const lastB = S.cfg.lastBackup ? `${S.cfg.lastBackup.slice(0, 10)} (${Math.floor((Date.now() - Date.parse(S.cfg.lastBackup)) / 86400000)}일 전)` : '없음';
+  el.innerHTML = `
+  <div class="card"><div class="card-head"><h3>자녀</h3><span class="hint">오늘 화면의 선택 버튼이 됩니다</span></div><div class="list">${kidRows || '<span class="hint">등록된 자녀가 없습니다.</span>'}</div>
+    <div class="row"><input type="text" id="st-kid" placeholder="자녀 이름" maxlength="20" style="flex:1;min-width:0"><button class="btn primary" type="button" id="st-kid-add">추가</button></div></div>
+  <div class="card"><div class="card-head"><h3>학원과 단가</h3></div><p class="hint" style="margin:0">학원마다 회당 단가를 입력하고 저장하세요. 이미 기록이 있는 학원의 단가를 바꾸면 적용 시작일을 묻습니다.</p><div class="list">${acRows || '<span class="hint">등록된 학원이 없습니다.</span>'}</div>
+    <div class="row"><input type="text" id="st-ac" placeholder="학원 이름" maxlength="30" style="flex:2;min-width:0"><input type="number" id="st-rate" inputmode="numeric" placeholder="회당 단가" min="0" step="100" style="flex:1;min-width:0"><button class="btn primary" type="button" id="st-ac-add">추가</button></div></div>
+  <div class="card"><h3>잠금 (PIN)</h3>
+    <p class="hint" style="margin:0">하원 체크는 PIN 없이 바로 됩니다. 기록 빼기, 잠금 해제, 설정 변경, 복원에만 PIN을 묻고, 한 번 입력하면 5분간 다시 묻지 않아요.</p>
+    <div class="row"><span>상태: <b>${pinOn() ? '켜짐' : sec.pinHash ? '꺼짐 (PIN 저장됨)' : '설정 안 됨'}</b></span><span class="spacer"></span>
+      ${sec.pinHash ? `<button class="btn sm" type="button" id="pin-toggle">${pinOn() ? '끄기' : '켜기'}</button><button class="btn sm" type="button" id="pin-change">PIN 변경</button>` : `<button class="btn sm primary" type="button" id="pin-set">PIN 설정</button>`}</div></div>
+  <div class="card"><h3>백업·복원</h3><div class="row small"><span class="muted">마지막 백업</span><span class="spacer"></span><b class="num">${esc(lastB)}</b></div>
+    <p class="hint" style="margin:0">백업 파일은 카카오톡 "나와의 채팅"이나 구글 드라이브에 올려 두세요. 정산 완료를 누를 때도 자동으로 백업합니다.</p>
+    <div class="row"><button class="btn" type="button" id="st-backup">${ICON.dl}백업 파일 저장</button><button class="btn" type="button" id="st-restore">백업에서 복원</button></div></div>
+  ${WEB ? `<div class="card" id="guide-card"><h3>아이폰에서 쓰기</h3>
+    <ol class="guide">
+      <li><b>홈 화면에 추가 (꼭 해 주세요)</b><br>사파리에서 이 주소를 연 채로 아래쪽 <b>공유</b> 버튼 → <b>홈 화면에 추가</b> → <b>추가</b>. 다음부터 "하원정산" 아이콘을 누르면 앱처럼 열립니다.</li>
+      <li><b>기록은 이 휴대폰에 저장</b><br>로그인 없이 쓰는 대신 기록이 이 기기 안에만 있습니다. 다른 기기와 자동으로 공유되지 않아요.</li>
+      <li><b>백업은 "파일에 저장"</b><br>백업 버튼을 누르면 공유 창이 뜹니다. <b>파일에 저장</b>을 고르면 아이폰 "파일" 앱에 보관되고, 복원할 때도 "파일" 앱에서 고르세요.</li>
+      <li><b>예전 기록 옮기기</b><br>claude.ai 버전에서 쓴 기록은 그쪽 설정에서 백업 파일을 저장한 뒤, 여기 설정에서 "백업에서 복원"으로 불러오면 됩니다.</li>
+    </ol>
+    <p class="hint" style="margin:0">${STANDALONE ? '지금 홈 화면 앱으로 실행 중입니다.' : '지금은 브라우저에서 실행 중입니다.'}</p></div>` : `<div class="card"><h3>아이폰에서 쓰기</h3>
+    <ol class="guide">
+      <li><b>Claude 앱에서 열기 (추천)</b><br>이 화면의 링크를 Claude 앱으로 열면 됩니다. 로그인되어 있으면 기록이 바로 보입니다.</li>
+      <li><b>홈 화면 아이콘 만들기</b><br>사파리로 링크를 열고 claude.ai에 로그인 → 아래쪽 <b>공유</b> 버튼 → <b>홈 화면에 추가</b>. 다음부터 아이콘을 누르면 바로 열립니다.</li>
+      <li><b>백업 파일 보관·복원</b><br>저장 창에서 <b>파일에 저장</b>을 고르면 아이폰 "파일" 앱에 보관됩니다. 복원할 때도 "파일" 앱에서 고르세요.</li>
+    </ol>
+    <p class="hint" style="margin:0">기록은 계정에 저장되므로 아이폰, PC, 다른 기기에서 같은 내용이 보입니다.</p></div>`}
+  <div class="card diag"><div class="row"><h3>자가 진단</h3><span class="spacer"></span><button class="btn sm" type="button" id="diag-run">점검하기</button></div><div id="diag-out" class="hint">저장소, 파일 저장, 암호화, 백업 상태를 점검합니다.</div></div>
+  <p class="hint" style="text-align:center;margin:0">하원 정산 V ${APP_VERSION} by S.H.KIM · 저장 위치: ${S.mode === 'db' ? '내 claude.ai 계정' : WEB ? '이 기기' : '이 브라우저(임시)'}</p>`;
+  bindSettings(el);
+}
+function move(list, id, dir) {
+  const arr = list.filter(x => !x.archived).sort(byOrder); const i = arr.findIndex(x => x.id === id), j = i + dir;
+  if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; arr.forEach((x, n) => x.order = n + 1);
+}
+function editSheet(title, label, value, onSave) {
+  openSheet(`<h3>${esc(title)}</h3><label class="field"><span>${esc(label)}</span><input type="text" id="ed-in" value="${esc(value)}" maxlength="30"></label>
+    <div class="row"><button class="btn" type="button" id="ed-no">취소</button><span class="spacer"></span><button class="btn primary" type="button" id="ed-ok">저장</button></div>`, el => {
+    $('#ed-no', el).onclick = closeSheet;
+    const ok = () => { const v = $('#ed-in', el).value.trim(); if (!v) return; closeSheet(); onSave(v); };
+    $('#ed-ok', el).onclick = ok; $('#ed-in', el).onkeydown = e => { if (e.key === 'Enter') ok(); };
+    const i = $('#ed-in', el); i.focus(); i.select();
+  });
+}
+function lockedFrom(from) { return Object.keys(S.months).filter(ym => S.months[ym].locked && ym >= C.ymOf(from)).sort(); }
+function savePrice(a, price) {
+  price = Math.round(price);
+  const cur = C.rateFor(a, today);
+  if (price === cur) return;
+  const recs = acadHasRecords(a.id), lockedRecs = acadHasRecords(a.id, true);
+  if ((!recs || cur === 0) && !lockedRecs) {
+    // 기록이 없거나 단가가 비어 있던 학원: 처음부터 이 단가로 계산
+    a.rates = [{ from: BASE_FROM, price }]; markDirty('config'); renderAll(); toast(`${a.name} 회당 ${C.won(price)}원으로 저장했습니다.`); return;
+  }
+  openSheet(`<h3>${esc(a.name)} 단가 변경</h3><p class="muted" style="margin:0">${C.won(cur)}원 → <b>${C.won(price)}원</b></p>
+    <label class="field"><span>적용 시작일</span><input type="date" id="r-d" value="${today}"></label>
+    <p class="hint" style="margin:0">이 날짜부터 새 단가로 계산합니다. 그 전 기록은 기존 단가 그대로예요.</p><div class="pin-msg" id="r-msg"></div>
+    <div class="row"><button class="btn" type="button" id="r-no">취소</button><span class="spacer"></span><button class="btn primary" type="button" id="r-ok">저장</button></div>`, s => {
+    $('#r-no', s).onclick = () => { closeSheet(); renderAll(); };
+    $('#r-ok', s).onclick = () => {
+      const d = $('#r-d', s).value;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { $('#r-msg', s).textContent = '날짜를 확인하세요.'; return; }
+      const lk = lockedFrom(d);
+      if (lk.length) { $('#r-msg', s).textContent = `정산 완료된 달(${lk.map(x => +x.slice(5) + '월').join(', ')})에 걸칩니다. 날짜를 바꾸거나 잠금을 먼저 푸세요.`; return; }
+      a.rates = (a.rates || []).filter(r => r.from !== d); a.rates.push({ from: d, price });
+      closeSheet(); markDirty('config'); renderAll(); toast(`${d}부터 ${C.won(price)}원으로 계산합니다.`);
+    };
+  });
+}
+function bindSettings(el) {
+  const P = '설정을 바꾸려면 PIN이 필요합니다.';
+  const cfgChange = fn => guard(P, () => { fn(); markDirty('config'); renderAll(); });
+  const on = (sel, fn) => el.querySelectorAll(sel).forEach(b => b.onclick = () => fn(b));
+  const addKid = () => { const v = $('#st-kid', el).value.trim(); if (!v) { toast('자녀 이름을 입력하세요.'); return; } guard(P, () => { S.cfg.children.push({ id: 'c' + uid8(), name: v.slice(0, 20), order: S.cfg.children.length + 1, color: nextColor() }); markDirty('config'); renderAll(); toast(`${v} 추가했습니다.`); }); };
+  $('#st-kid-add', el).onclick = addKid; $('#st-kid', el).onkeydown = e => { if (e.key === 'Enter') addKid(); };
+  $('#st-ac-add', el).onclick = () => {
+    const n = $('#st-ac', el).value.trim(), p = $('#st-rate', el).value;
+    if (!n) { toast('학원 이름을 입력하세요.'); return; }
+    if (p !== '' && !(Number(p) >= 0)) { toast('단가는 숫자로 입력하세요.'); return; }
+    guard(P, () => { S.cfg.academies.push({ id: 'a' + uid8(), name: n.slice(0, 30), order: S.cfg.academies.length + 1, rates: [{ from: BASE_FROM, price: Math.round(Number(p) || 0) }] }); markDirty('config'); renderAll(); toast(`${n} 추가했습니다.`); });
+  };
+  on('[data-kup]', b => cfgChange(() => move(S.cfg.children, b.dataset.kup, -1)));
+  on('[data-kdn]', b => cfgChange(() => move(S.cfg.children, b.dataset.kdn, 1)));
+  on('[data-aup]', b => cfgChange(() => move(S.cfg.academies, b.dataset.aup, -1)));
+  on('[data-adn]', b => cfgChange(() => move(S.cfg.academies, b.dataset.adn, 1)));
+  on('[data-kren]', b => guard(P, () => { const k = kidOf(b.dataset.kren); editSheet('자녀 이름 변경', '이름', k.name, v => { k.name = v.slice(0, 20); markDirty('config'); renderAll(); toast('이름을 바꿨습니다.'); }); }));
+  on('[data-aren]', b => guard(P, () => { const a = acadOf(b.dataset.aren); editSheet('학원 이름 변경', '이름', a.name, v => { a.name = v.slice(0, 30); markDirty('config'); renderAll(); toast('이름을 바꿨습니다.'); }); }));
+  on('[data-kdel]', b => guard(P, () => { const k = kidOf(b.dataset.kdel); confirmSheet(`${k.name} 삭제`, '선택 버튼에서 뺍니다. 지난 기록과 정산 금액은 그대로 남아요.', '삭제', () => { k.archived = true; S.selKids.delete(k.id); markDirty('config'); renderAll(); }, true); }));
+  on('[data-adel]', b => guard(P, () => { const a = acadOf(b.dataset.adel); confirmSheet(`${a.name} 삭제`, '선택 버튼에서 뺍니다. 지난 기록과 정산 금액은 그대로 남아요.', '삭제', () => { a.archived = true; S.selAcads.delete(a.id); markDirty('config'); renderAll(); }, true); }));
+  el.querySelectorAll('[data-price]').forEach(inp => {
+    const a = acadOf(inp.dataset.price); const btn = el.querySelector(`[data-psave="${a.id}"]`);
+    const changed = () => inp.value !== '' && Math.round(Number(inp.value)) !== C.rateFor(a, today);
+    inp.oninput = () => { btn.hidden = !changed(); };
+    const commit = () => { if (!changed()) return; const v = Number(inp.value); if (!(v >= 0)) { toast('단가는 숫자로 입력하세요.'); return; } guard('단가를 바꾸려면 PIN이 필요합니다.', () => savePrice(a, v)); };
+    btn.onclick = commit; inp.onkeydown = e => { if (e.key === 'Enter') { inp.blur(); commit(); } };
+  });
+  const ps = $('#pin-set', el); if (ps) ps.onclick = () => setPinFlow();
+  const pc = $('#pin-change', el); if (pc) pc.onclick = () => guard('PIN을 바꾸려면 현재 PIN이 필요합니다.', () => setPinFlow());
+  const pt = $('#pin-toggle', el); if (pt) pt.onclick = () => {
+    if (pinOn()) guard('잠금을 끄려면 PIN이 필요합니다.', () => { S.cfg.sec.enabled = false; markDirty('config'); renderAll(); toast('PIN 잠금을 껐습니다.'); });
+    else { S.cfg.sec.enabled = true; markDirty('config'); renderAll(); toast('PIN 잠금을 켰습니다.'); }
+  };
+  $('#st-backup', el).onclick = doBackup;
+  $('#st-restore', el).onclick = () => guard('복원하려면 PIN이 필요합니다.', () => $('#restore-file').click());
+  $('#diag-run', el).onclick = runDiag;
+}
+
+/* ---------- 자가 진단 ---------- */
+async function runDiag() {
+  const out = $('#diag-out'); out.innerHTML = '점검 중…'; const R = [];
+  const add = (st, name, detail) => R.push({ st, name, detail });
+  if (WEB) add(!IOS || STANDALONE ? 'ok' : 'warn', '실행 환경', STANDALONE ? '홈 화면 앱으로 실행 중' : IOS ? '사파리에서 실행 중 · 홈 화면에 추가하세요' : '브라우저에서 실행 중');
+  else add(window.claude ? 'ok' : 'warn', '실행 환경', window.claude ? 'claude.ai 화면에서 실행 중' : 'claude.ai 밖에서 실행 중 (계정 저장 불가)');
+  if (S.mode === 'db') {
+    try {
+      const ref = S.col.doc('probe'); const stamp = Date.now();
+      await ref.set({ t: stamp }); const g = await ref.get(); await ref.delete();
+      add(g.exists && g.data().t === stamp ? 'ok' : 'bad', '계정 저장소 쓰기·읽기', g.exists ? '정상 (테스트 기록 저장 후 삭제)' : '저장 후 다시 읽지 못함');
+    } catch (e) { add('bad', '계정 저장소 쓰기·읽기', `<code>${esc(e.code || '')} ${esc(e.message || e)}</code>`); }
+  } else if (!WEB) add('warn', '저장 위치', `이 브라우저 임시 저장 · ${esc(S.modeReason)}`);
+  let lsOk = false; try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); lsOk = true; } catch (e) { }
+  if (WEB) {
+    let back = false; try { const d = loadLocal(); back = !!(d && d.cfg); } catch (e) { }
+    add(lsOk && back ? 'ok' : 'bad', '기기 저장 쓰기·읽기', lsOk && back ? '정상' : '이 브라우저가 저장을 막고 있습니다 (개인정보 보호 모드인지 확인하세요)');
+    add(S.persisted ? 'ok' : 'warn', '기록 보존', S.persisted ? '영구 보관 허용됨' : STANDALONE ? '홈 화면 앱: 정상 보관' : '홈 화면에 추가하면 더 안전하게 보관됩니다');
+    add(navigator.serviceWorker && navigator.serviceWorker.controller ? 'ok' : 'warn', '오프라인 실행', navigator.serviceWorker && navigator.serviceWorker.controller ? '인터넷 없이도 열림' : '첫 실행 후 다시 열면 준비됩니다');
+    const canShareFile = (() => { try { return !!(navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.csv', { type: 'text/csv' })] })); } catch (e) { return false; } })();
+    add('ok', '파일 저장(백업·CSV)', canShareFile ? '공유 창 → 파일에 저장' : '내려받기로 저장');
+  } else {
+    add(lsOk ? 'ok' : 'warn', '이 기기 보조 사본', lsOk ? '계정 저장 실패 시 이 기기에 사본 보관 가능' : '브라우저 저장이 막혀 있음 (계정 저장만 사용)');
+    add(S.downloads ? 'ok' : 'warn', '파일 저장(백업·CSV)', S.downloads ? '사용 가능' : '이 화면에서 허용되지 않음 · 화면 상단 권한 메뉴를 확인하세요');
+  }
+  add(hasCrypto() ? 'ok' : 'warn', 'PIN 암호화', hasCrypto() ? 'PBKDF2-SHA256 해시 저장' : '사용 불가 · PIN 없이 기록은 계속 가능');
+  add(navigator.onLine ? 'ok' : 'warn', '인터넷 연결', navigator.onLine ? '연결됨' : '끊김 · 연결되면 자동으로 저장됩니다');
+  const zero = activeAcads().filter(a => !C.rateFor(a, today)).map(a => a.name);
+  add(zero.length ? 'warn' : 'ok', '학원 단가', zero.length ? `미설정: ${esc(zero.join(', '))}` : '모든 학원 설정됨');
+  const days = S.cfg.lastBackup ? Math.floor((Date.now() - Date.parse(S.cfg.lastBackup)) / 86400000) : null;
+  add(days !== null && days < BACKUP_DAYS ? 'ok' : 'warn', '백업', days === null ? '백업 파일 없음' : `${days}일 전`);
+  const nDocs = Object.keys(S.months).length + 1; const size = JSON.stringify({ c: S.cfg, m: S.months }).length;
+  add('ok', '데이터 규모', `${nDocs}개 문서 · 약 ${Math.ceil(size / 1024)}KB (월별 1문서, 한도 25,000문서)`);
+  if (S.lastError) add('bad', '최근 오류', `<code>${esc(S.lastError.where)} · ${esc(S.lastError.code)} · ${esc(S.lastError.message)} · ${esc(S.lastError.at)}</code>`);
+  out.innerHTML = `<ul>${R.map(r => `<li><span class="st ${r.st}">${r.st === 'ok' ? '정상' : r.st === 'warn' ? '주의' : '오류'}</span><span><b>${esc(r.name)}</b><br>${r.detail}</span></li>`).join('')}</ul>`;
+}
+
+/* ---------- 라우팅 ---------- */
+function renderChip() {
+  const c = $('#store-chip');
+  if (S.mode === 'db') { c.className = S.lastError ? 'chip warn' : 'chip ok'; c.innerHTML = `<span class="dot"></span>${S.lastError ? '저장 확인 필요' : '계정 저장'}`; }
+  else if (S.mode === 'local' && WEB) { c.className = 'chip ok'; c.innerHTML = '<span class="dot"></span>기기 저장'; }
+  else if (S.mode === 'local') { c.className = 'chip warn'; c.innerHTML = '<span class="dot"></span>임시 저장'; }
+  else { c.className = 'chip mute'; c.innerHTML = '<span class="dot"></span>불러오는 중'; }
+}
+function render() {
+  ['today', 'cal', 'settle', 'settings'].forEach(v => { $('#view-' + v).hidden = v !== S.view; });
+  document.querySelectorAll('.tabs button').forEach(b => { if (b.dataset.tab === S.view) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  if (S.view === 'today') renderToday(); else if (S.view === 'cal') renderCal(); else if (S.view === 'settle') renderSettle(); else renderSettings();
+  renderChip();
+}
+function renderAll() {
+  if ($('#modal-root').innerHTML) { renderChip(); return; } // 입력 중인 시트는 유지
+  if (S.view === 'settings' && document.activeElement && document.activeElement.matches('#view-settings input')) { renderChip(); return; }
+  render();
+}
+function go(v) { S.view = v; render(); window.scrollTo(0, 0); }
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => go(b.dataset.tab));
+// 아이폰은 앱 전환·화면 잠금 시 beforeunload가 오지 않으므로 숨김/종료 시점에 즉시 저장
+const flushNow = () => { if (S.pendingMemo) S.pendingMemo(); if (dirty.size) { clearTimeout(flushTimer); flush(); } };
+window.addEventListener('beforeunload', flushNow);
+window.addEventListener('pagehide', flushNow);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushNow(); });
+// 아이폰 키보드가 올라오면 하단 메뉴가 입력칸을 가리지 않도록 숨김
+const isField = el => el && el.matches && el.matches('input:not([type=file]):not([type=checkbox]),textarea');
+document.addEventListener('focusin', e => { if (isField(e.target)) document.body.classList.add('kb'); });
+document.addEventListener('focusout', () => setTimeout(() => { if (!isField(document.activeElement)) document.body.classList.remove('kb'); }, 60));
+
+render();
+initStore();
+})();
+
+</script>
+
+<script>
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {}));
+}
+</script>
+</body>
+</html>
